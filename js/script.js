@@ -177,48 +177,58 @@ import {
   /* ------------------------------------------------------------------ */
 
   function initPipeline() {
-    const path = $('#pipelinePath');
-    const particlesGroup = $('#pipelineParticles');
+    // Both the horizontal (desktop) and vertical (mobile) SVGs are in the
+    // DOM at once — CSS shows only one at a time. Animate particles on
+    // whichever paths exist, and wire clicks for every .stage-node so
+    // filtering/scrolling works no matter which layout is visible.
+    const pathConfigs = [
+      { path: $('#pipelinePath'), particlesGroup: $('#pipelineParticles') },
+      { path: $('#pipelinePathVertical'), particlesGroup: $('#pipelineParticlesVertical') },
+    ];
     const stageNodes = $$('.stage-node');
     const activeLabel = $('#pipelineActiveLabel');
 
-    // ---- Flowing particles along the path ----
-    if (path && particlesGroup && !prefersReducedMotion()) {
-      const PARTICLE_COUNT = 3;
-      const pathLength = path.getTotalLength();
-      const particles = [];
+    // ---- Flowing particles along each path ----
+    if (!prefersReducedMotion()) {
+      pathConfigs.forEach(({ path, particlesGroup }) => {
+        if (!path || !particlesGroup) return;
 
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('r', '4');
-        circle.setAttribute('class', 'pipeline-particle');
-        particlesGroup.appendChild(circle);
-        particles.push({
-          el: circle,
-          // stagger start offsets evenly along the path
-          offset: (i / PARTICLE_COUNT) * pathLength,
-        });
-      }
+        const PARTICLE_COUNT = 3;
+        const pathLength = path.getTotalLength();
+        const particles = [];
 
-      const SPEED = 90; // px per second along the path
-      let lastTime = null;
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('r', '4');
+          circle.setAttribute('class', 'pipeline-particle');
+          particlesGroup.appendChild(circle);
+          particles.push({
+            el: circle,
+            // stagger start offsets evenly along the path
+            offset: (i / PARTICLE_COUNT) * pathLength,
+          });
+        }
 
-      function tick(now) {
-        if (lastTime === null) lastTime = now;
-        const dt = (now - lastTime) / 1000;
-        lastTime = now;
+        const SPEED = 90; // px per second along the path
+        let lastTime = null;
 
-        particles.forEach((p) => {
-          p.offset = (p.offset + SPEED * dt) % pathLength;
-          const point = path.getPointAtLength(p.offset);
-          p.el.setAttribute('cx', point.x);
-          p.el.setAttribute('cy', point.y);
-        });
+        function tick(now) {
+          if (lastTime === null) lastTime = now;
+          const dt = (now - lastTime) / 1000;
+          lastTime = now;
+
+          particles.forEach((p) => {
+            p.offset = (p.offset + SPEED * dt) % pathLength;
+            const point = path.getPointAtLength(p.offset);
+            p.el.setAttribute('cx', point.x);
+            p.el.setAttribute('cy', point.y);
+          });
+
+          requestAnimationFrame(tick);
+        }
 
         requestAnimationFrame(tick);
-      }
-
-      requestAnimationFrame(tick);
+      });
     }
     // If reduced motion is preferred, particles are simply not animated
     // (no elements created), matching the pipeline's calmer static state.
@@ -230,6 +240,16 @@ import {
       const activate = () => {
         const isCurrentlyActive = node.classList.contains('is-active');
         setFilter(isCurrentlyActive ? 'all' : stage, { fromPipeline: true });
+
+        // Jump to the projects section so tapping a stage on mobile
+        // actually takes you to the filtered results, not just updates
+        // a label above the fold.
+        if (!isCurrentlyActive) {
+          const projectsSection = $('#projects');
+          if (projectsSection) {
+            projectsSection.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+          }
+        }
       };
 
       node.addEventListener('click', activate);

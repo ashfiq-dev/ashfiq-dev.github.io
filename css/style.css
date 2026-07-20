@@ -207,12 +207,20 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
   display:flex;
   align-items:center;
   justify-content:space-between;
+  gap:12px;
 }
 .logo{
   font-family:var(--font-mono);
   font-weight:700;
-  font-size:1.05rem;
+  /* Scales down smoothly with the viewport instead of wrapping onto a
+     second line inside the fixed-height navbar. */
+  font-size:clamp(0.78rem, 3.6vw, 1.05rem);
   letter-spacing:0.02em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  min-width:0;
+  flex-shrink:1;
 }
 .logo-bracket{ color:var(--c-scrape); }
 
@@ -350,6 +358,11 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
 /* Pipeline SVG */
 .pipeline-wrap{ max-width:1100px; margin:0 auto; }
 .pipeline-svg{ width:100%; height:auto; overflow:visible; }
+
+/* Two SVGs (horizontal + vertical), toggled by viewport width so mobile
+   gets a layout that actually fits a narrow screen instead of a
+   squeezed-down horizontal one. See the 720px breakpoint below. */
+.pipeline-svg-vertical{ display:none; max-width:280px; margin:0 auto; }
 
 .pipeline-path{
   stroke-dasharray:6 6;
@@ -931,6 +944,9 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
   .hero-cta .btn{ justify-content:center; }
 
   .pipeline-svg .stage-label{ font-size:11px; }
+
+  .pipeline-svg-horizontal{ display:none; }
+  .pipeline-svg-vertical{ display:block; }
 }
 
 @media (max-width: 480px){

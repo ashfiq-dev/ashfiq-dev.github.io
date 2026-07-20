@@ -215,6 +215,140 @@ function activateTab(tabId, navButtons, content) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 4b. PHOTO CROP MODAL                                                 */
+/* ------------------------------------------------------------------ */
+/* Facebook-style "zoom & pan into a circle" cropper. Pure canvas, no
+   dependencies. Resolves with a cropped Blob (JPEG) sized to
+   OUTPUT_SIZE x OUTPUT_SIZE, or null if the user cancels. */
+
+function openCropModal(file) {
+  const OUTPUT_SIZE = 512;
+  const STAGE_PX = 320; // matches .crop-stage max-width in admin.css
+
+  return new Promise((resolve) => {
+    const imgUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      const overlay = el('div', { class: 'crop-modal-overlay' });
+      const canvas = el('canvas', { width: STAGE_PX, height: STAGE_PX });
+      const ctx = canvas.getContext('2d');
+      const stage = el('div', { class: 'crop-stage' }, [canvas, el('div', { class: 'crop-stage-mask' })]);
+
+      // Zoom range: 1x = image's shorter side exactly fills the circle.
+      const minScale = STAGE_PX / Math.min(img.width, img.height);
+      let scale = minScale;
+      let offsetX = 0; // pan, in stage pixels, image-center relative
+      let offsetY = 0;
+
+      const zoomSlider = el('input', { type: 'range', min: '0', max: '100', value: '0' });
+
+      function draw() {
+        ctx.clearRect(0, 0, STAGE_PX, STAGE_PX);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        const x = (STAGE_PX - w) / 2 + offsetX;
+        const y = (STAGE_PX - h) / 2 + offsetY;
+        ctx.drawImage(img, x, y, w, h);
+      }
+
+      function clampPan() {
+        const w = img.width * scale;
+        const h = img.height * scale;
+        const maxX = Math.max(0, (w - STAGE_PX) / 2);
+        const maxY = Math.max(0, (h - STAGE_PX) / 2);
+        offsetX = Math.min(maxX, Math.max(-maxX, offsetX));
+        offsetY = Math.min(maxY, Math.max(-maxY, offsetY));
+      }
+
+      zoomSlider.addEventListener('input', () => {
+        const t = Number(zoomSlider.value) / 100; // 0..1
+        scale = minScale * (1 + t * 2); // up to 3x the fit scale
+        clampPan();
+        draw();
+      });
+
+      // Drag to pan (mouse + touch).
+      let dragging = false;
+      let lastX = 0;
+      let lastY = 0;
+
+      function pointerDown(x, y) { dragging = true; lastX = x; lastY = y; }
+      function pointerMove(x, y) {
+        if (!dragging) return;
+        offsetX += x - lastX;
+        offsetY += y - lastY;
+        lastX = x; lastY = y;
+        clampPan();
+        draw();
+      }
+      function pointerUp() { dragging = false; }
+
+      stage.addEventListener('mousedown', (e) => pointerDown(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => pointerMove(e.clientX, e.clientY));
+      window.addEventListener('mouseup', pointerUp);
+
+      stage.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        pointerDown(t.clientX, t.clientY);
+      }, { passive: true });
+      stage.addEventListener('touchmove', (e) => {
+        const t = e.touches[0];
+        pointerMove(t.clientX, t.clientY);
+      }, { passive: true });
+      stage.addEventListener('touchend', pointerUp);
+
+      function cleanup() {
+        window.removeEventListener('mousemove', pointerMove);
+        window.removeEventListener('mouseup', pointerUp);
+        URL.revokeObjectURL(imgUrl);
+        overlay.remove();
+      }
+
+      const cancelBtn = el('button', { type: 'button', class: 'btn' }, 'Cancel');
+      const useBtn = el('button', { type: 'button', class: 'btn btn-primary' }, 'Use photo');
+
+      cancelBtn.addEventListener('click', () => { cleanup(); resolve(null); });
+      useBtn.addEventListener('click', () => {
+        // Render the current crop at full OUTPUT_SIZE resolution.
+        const outCanvas = document.createElement('canvas');
+        outCanvas.width = OUTPUT_SIZE;
+        outCanvas.height = OUTPUT_SIZE;
+        const outCtx = outCanvas.getContext('2d');
+        const ratio = OUTPUT_SIZE / STAGE_PX;
+        const w = img.width * scale * ratio;
+        const h = img.height * scale * ratio;
+        const x = (OUTPUT_SIZE - w) / 2 + offsetX * ratio;
+        const y = (OUTPUT_SIZE - h) / 2 + offsetY * ratio;
+        outCtx.drawImage(img, x, y, w, h);
+        outCanvas.toBlob((blob) => {
+          cleanup();
+          resolve(blob);
+        }, 'image/jpeg', 0.92);
+      });
+
+      overlay.appendChild(
+        el('div', { class: 'crop-modal' }, [
+          el('h2', {}, 'Adjust photo'),
+          stage,
+          el('div', { class: 'crop-controls' }, [
+            el('span', { class: 'field-hint' }, 'Zoom'),
+            zoomSlider,
+          ]),
+          el('div', { class: 'crop-modal-actions' }, [cancelBtn, useBtn]),
+        ])
+      );
+
+      document.body.appendChild(overlay);
+      draw();
+    };
+
+    img.onerror = () => { URL.revokeObjectURL(imgUrl); resolve(null); };
+    img.src = imgUrl;
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* 5. PROFILE TAB                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -247,9 +381,15 @@ async function renderProfileTab(content) {
 
   photoFileInput.addEventListener('change', async () => {
     const file = photoFileInput.files[0];
+    photoFileInput.value = ''; // allow re-selecting the same file later
     if (!file) return;
+
+    const croppedBlob = await openCropModal(file);
+    if (!croppedBlob) return; // user cancelled
+
     photoStatus.textContent = 'Uploading\u2026';
-    const uploadResult = await uploadSingleImage(file);
+    const croppedFile = new File([croppedBlob], 'profile-photo.jpg', { type: 'image/jpeg' });
+    const uploadResult = await uploadSingleImage(croppedFile);
     if (!uploadResult.ok) {
       photoStatus.textContent = uploadResult.message;
       showToast(uploadResult.message, true);
@@ -528,6 +668,18 @@ async function renderProjectsTab(content) {
 /* 7. SKILLS / EXPERIENCE / BLOG — shared simple list+form pattern      */
 /* ------------------------------------------------------------------ */
 
+// Fixed pipeline stages — must match the four stage colors defined in
+// css/style.css (--c-scrape, --c-analyze, --c-automate, --c-ship). Kept
+// as one source of truth so every "stage" / "group name" / "accent
+// color" field in the admin panel is a dropdown over these four,
+// instead of free text that could drift from the site theme.
+const PIPELINE_STAGES = [
+  { value: 'scrape', label: 'Scrape', color: '#00E5FF' },
+  { value: 'analyze', label: 'Analyze', color: '#FF3EA5' },
+  { value: 'automate', label: 'Automate', color: '#FFB020' },
+  { value: 'ship', label: 'Ship', color: '#7B5CFF' },
+];
+
 const skillsTabConfig = {
   title: 'Skills',
   sub: 'Grouped skill tags shown in the main site\u2019s skills section.',
@@ -535,9 +687,9 @@ const skillsTabConfig = {
   itemTitle: (item) => item.group || 'Untitled group',
   itemSub: (item) => (item.tags || []).join(', '),
   fields: [
-    { key: 'group', label: 'Group name', type: 'text', placeholder: 'e.g. Scrape' },
-    { key: 'stage', label: 'Stage', type: 'text', placeholder: 'scrape / analyze / automate / ship' },
-    { key: 'color', label: 'Accent color (hex)', type: 'text', placeholder: '#00E5FF' },
+    { key: 'group', label: 'Group name', type: 'stage-select' },
+    { key: 'stage', label: 'Stage', type: 'stage-select' },
+    { key: 'color', label: 'Accent color', type: 'stage-color' },
     { key: 'tags', label: 'Tags', type: 'list', placeholder: 'Python, BeautifulSoup, Requests', hint: 'Comma-separated' },
   ],
 };
@@ -555,7 +707,7 @@ const experienceTabConfig = {
     { key: 'role', label: 'Role', type: 'text' },
     { key: 'desc', label: 'Description', type: 'textarea' },
     { key: 'branch', label: 'Branch', type: 'text', placeholder: 'main' },
-    { key: 'stage', label: 'Stage (for accent color)', type: 'text', placeholder: 'scrape / analyze / automate / ship' },
+    { key: 'stage', label: 'Stage (for accent color)', type: 'stage-select' },
   ],
 };
 
@@ -639,6 +791,22 @@ async function renderSimpleCollectionTab(content, config) {
         input = el('textarea', { rows: 4, placeholder: f.placeholder || '' }, item[f.key] || '');
       } else if (f.type === 'list') {
         input = el('input', { type: 'text', placeholder: f.placeholder || '', value: (item[f.key] || []).join(', ') });
+      } else if (f.type === 'stage-select') {
+        // Fixed dropdown over the four pipeline stages — keeps this value
+        // locked to what the site theme actually supports.
+        const current = (item[f.key] || '').toLowerCase();
+        input = el('select', {}, PIPELINE_STAGES.map((s) =>
+          el('option', { value: s.value, selected: current === s.value ? 'selected' : false }, s.label)
+        ));
+      } else if (f.type === 'stage-color') {
+        // Accent color is derived from the stage, not typed in — always
+        // matches --c-scrape / --c-analyze / --c-automate / --c-ship.
+        const current = (item[f.key] || '').toUpperCase();
+        const matchIdx = PIPELINE_STAGES.findIndex((s) => s.color.toUpperCase() === current);
+        input = el('select', {}, PIPELINE_STAGES.map((s, i) =>
+          el('option', { value: s.color, selected: (matchIdx === -1 ? i === 0 : matchIdx === i) ? 'selected' : false },
+            `${s.label} \u2014 ${s.color}`)
+        ));
       } else {
         input = el('input', { type: 'text', placeholder: f.placeholder || '', value: item[f.key] || '' });
       }
