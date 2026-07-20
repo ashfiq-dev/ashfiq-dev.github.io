@@ -1,0 +1,94 @@
+/* ==========================================================================
+   FIRESTORE SECURITY RULES — portfolio site
+   ==========================================================================
+
+   How to deploy these rules: see SECURITY.md in this folder — it walks
+   through pasting this file into the Firebase Console step by step.
+
+   POLICY
+   --------------------------------------------------------------------------
+   - READ  : public. Anyone (including anonymous, unauthenticated visitors)
+             can read every document in every collection below. This is
+             required for the static site to display projects, skills,
+             experience, blog posts, and profile info to visitors who are
+             not logged in.
+   - WRITE : locked to signed-in users only (request.auth != null), via
+             Firebase Authentication. Update/delete follow the same rule.
+             A plain "signed in" check is a reasonable starting point while
+             you're the only person with an account on this project, but
+             it is NOT the same as "only me" — see the UID lock-down note
+             in section 2 below, and read SECURITY.md before you rely on
+             this rule set in production.
+
+   This file only takes effect once you paste it into the Firebase Console
+   (or deploy it with the Firebase CLI) — see SECURITY.md.
+   ========================================================================== */
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ------------------------------------------------------------------ */
+    /* 1. SHARED "IS ADMIN" CHECK                                          */
+    /* ------------------------------------------------------------------ */
+    /* Currently: any authenticated Firebase user counts as admin.
+       This is fine only if you never create additional Firebase Auth
+       users for this project (e.g. you never add a "let visitors sign
+       in" feature). The moment you do, tighten this — see section 2. */
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 2. LOCKING THIS DOWN TO ONE SPECIFIC ADMIN UID (recommended)        */
+    /* ------------------------------------------------------------------ */
+    /* Active: writes are now locked to one specific Firebase Auth UID
+       (the site owner's admin account). */
+    function isAdminUid() {
+      return request.auth != null && request.auth.uid == 'KFZRDjzDKveYR3SB4wIF9pGnUzo2';
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 3. COLLECTION RULES                                                 */
+    /* ------------------------------------------------------------------ */
+    /* Same pattern for every collection the site reads from:
+         - anyone can read
+         - only an authenticated admin can create/update/delete */
+
+    match /projects/{docId} {
+      allow read: if true;
+      allow write: if isAdminUid();
+    }
+
+    match /skills/{docId} {
+      allow read: if true;
+      allow write: if isAdminUid();
+    }
+
+    match /experience/{docId} {
+      allow read: if true;
+      allow write: if isAdminUid();
+    }
+
+    match /blogPosts/{docId} {
+      allow read: if true;
+      allow write: if isAdminUid();
+    }
+
+    match /profile/{docId} {
+      allow read: if true;
+      allow write: if isAdminUid();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 4. DEFAULT DENY                                                     */
+    /* ------------------------------------------------------------------ */
+    /* Anything not explicitly matched above (e.g. a future collection
+       you add and forget to write a rule for) is denied by default —
+       Firestore rules are deny-by-default unless a match block says
+       otherwise, so no extra rule is needed here. This comment is just
+       a reminder to add a matching block above whenever you introduce
+       a new collection. */
+  }
+}

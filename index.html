@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>yourname — Python Automation & Data Engineer</title>
+<meta name="description" content="Portfolio of yourname — Python automation, scraping, data analytics, APIs, desktop & mobile apps.">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============================================
+     SKIP LINK (accessibility)
+============================================ -->
+<a class="skip-link" href="#main">Skip to content</a>
+
+<!-- ============================================
+     NAVBAR
+============================================ -->
+<header class="navbar" id="navbar">
+  <div class="navbar-inner">
+    <a href="#hero" class="logo">
+      <span class="logo-bracket">&lt;</span>yourname<span class="logo-bracket">/&gt;</span>
+    </a>
+
+    <nav class="nav-links" id="navLinks">
+      <a href="#about">about</a>
+      <a href="#skills">skills</a>
+      <a href="#projects">projects</a>
+      <a href="#experience">experience</a>
+      <a href="#log">log</a>
+      <a href="#contact">contact</a>
+    </nav>
+
+    <div class="navbar-actions">
+      <!-- Theme toggle pill -->
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to light theme" aria-pressed="false">
+        <span class="theme-toggle-track">
+          <span class="theme-toggle-option" data-mode="dark">dark</span>
+          <span class="theme-toggle-option" data-mode="light">light</span>
+          <span class="theme-toggle-thumb" aria-hidden="true"></span>
+        </span>
+      </button>
+
+      <!-- Mobile menu button -->
+      <button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============================================
+       HERO — THE PIPELINE
+  ============================================ -->
+  <section class="hero" id="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+
+    <div class="hero-inner">
+      <p class="hero-eyebrow">// python automation & data engineering</p>
+      <h1 class="hero-title">
+        I build the <span class="hero-title-gradient">pipeline</span><br>
+        from raw data to real product.
+      </h1>
+      <p class="hero-sub">
+        Hi, I'm <strong>yourname</strong> — I scrape it, analyze it, automate it, and ship it.
+        Edit this placeholder bio with your real one-liner.
+      </p>
+
+      <div class="hero-cta">
+        <a href="#projects" class="btn btn-primary">View Projects</a>
+        <a href="#contact" class="btn btn-ghost">Get in Touch</a>
+      </div>
+
+      <!-- PIPELINE SVG DIAGRAM -->
+      <div class="pipeline-wrap">
+        <svg class="pipeline-svg" viewBox="0 0 1200 260" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline diagram with four stages: Scrape, Analyze, Automate, Ship">
+          <defs>
+            <linearGradient id="pathGradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#00E5FF"/>
+              <stop offset="33%" stop-color="#FF3EA5"/>
+              <stop offset="66%" stop-color="#FFB020"/>
+              <stop offset="100%" stop-color="#7B5CFF"/>
+            </linearGradient>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="blur"/>
+              <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- main path -->
+          <path id="pipelinePath" class="pipeline-path" d="M 100 130 C 250 130, 250 60, 400 60 C 550 60, 550 200, 700 200 C 850 200, 850 130, 1000 130 C 1050 130, 1075 130, 1100 130" stroke="url(#pathGradient)" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- flowing particles (populated/animated via CSS + JS) -->
+          <g class="pipeline-particles" id="pipelineParticles" aria-hidden="true"></g>
+
+          <!-- Stage nodes -->
+          <g class="stage-node" data-stage="scrape" tabindex="0" role="button" aria-pressed="false" aria-label="Filter projects by Scrape stage">
+            <circle cx="100" cy="130" r="34" class="stage-circle" style="--stage-color:#00E5FF"/>
+            <circle cx="100" cy="130" r="34" class="stage-circle-ring" style="--stage-color:#00E5FF"/>
+            <text x="100" y="135" class="stage-icon" text-anchor="middle">◈</text>
+            <text x="100" y="190" class="stage-label" text-anchor="middle">SCRAPE</text>
+          </g>
+
+          <g class="stage-node" data-stage="analyze" tabindex="0" role="button" aria-pressed="false" aria-label="Filter projects by Analyze stage">
+            <circle cx="400" cy="60" r="34" class="stage-circle" style="--stage-color:#FF3EA5"/>
+            <circle cx="400" cy="60" r="34" class="stage-circle-ring" style="--stage-color:#FF3EA5"/>
+            <text x="400" y="65" class="stage-icon" text-anchor="middle">◆</text>
+            <text x="400" y="20" class="stage-label" text-anchor="middle">ANALYZE</text>
+          </g>
+
+          <g class="stage-node" data-stage="automate" tabindex="0" role="button" aria-pressed="false" aria-label="Filter projects by Automate stage">
+            <circle cx="700" cy="200" r="34" class="stage-circle" style="--stage-color:#FFB020"/>
+            <circle cx="700" cy="200" r="34" class="stage-circle-ring" style="--stage-color:#FFB020"/>
+            <text x="700" y="205" class="stage-icon" text-anchor="middle">◉</text>
+            <text x="700" y="250" class="stage-label" text-anchor="middle">AUTOMATE</text>
+          </g>
+
+          <g class="stage-node" data-stage="ship" tabindex="0" role="button" aria-pressed="false" aria-label="Filter projects by Ship stage">
+            <circle cx="1000" cy="130" r="34" class="stage-circle" style="--stage-color:#7B5CFF"/>
+            <circle cx="1000" cy="130" r="34" class="stage-circle-ring" style="--stage-color:#7B5CFF"/>
+            <text x="1000" y="135" class="stage-icon" text-anchor="middle">▲</text>
+            <text x="1000" y="190" class="stage-label" text-anchor="middle">SHIP</text>
+          </g>
+        </svg>
+        <p class="pipeline-hint">Click a stage to filter projects below · <span id="pipelineActiveLabel">showing all</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       ABOUT — TERMINAL WINDOW
+  ============================================ -->
+  <section class="section" id="about">
+    <div class="section-inner about-grid">
+
+      <div class="about-avatar-wrap">
+        <div class="about-avatar">
+          <span class="about-avatar-initial">Y</span>
+        </div>
+        <p class="about-avatar-caption">/* replace with your profile photo */</p>
+      </div>
+
+      <div class="terminal-window" id="terminalWindow">
+        <div class="terminal-titlebar">
+          <span class="terminal-dot dot-red"></span>
+          <span class="terminal-dot dot-yellow"></span>
+          <span class="terminal-dot dot-green"></span>
+          <span class="terminal-titletext">whoami.py</span>
+        </div>
+        <div class="terminal-body">
+          <p class="terminal-line"><span class="terminal-prompt">$</span> python whoami.py</p>
+          <p class="terminal-output" id="typewriterTarget" data-profile-field="bio" data-full-text="Hi, I'm yourname. I'm a Python developer who lives at the intersection of data and automation — building scrapers that collect it, pipelines that analyze it, scripts that automate it, and apps that ship it to real users. I care about clean code, reliable systems, and turning messy raw data into something useful. Currently open to freelance work and full-time opportunities. This bio is placeholder text — edit me in index.html or in the Firestore "profile" collection."></span><span class="terminal-cursor" aria-hidden="true">▋</span></p>
+          <p class="terminal-line terminal-line-muted"># edit this bio in index.html — data-full-text attribute</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================
+       SKILLS
+  ============================================ -->
+  <section class="section section-alt" id="skills">
+    <div class="section-inner">
+      <h2 class="section-title"><span class="section-title-num">01.</span> Skills</h2>
+      <p class="section-sub">Tools and technologies across the pipeline — placeholder list, edit freely.</p>
+
+      <div class="skills-grid">
+
+        <div class="skill-group">
+          <h3 class="skill-group-title" style="--group-color:#00E5FF">Scrape</h3>
+          <div class="skill-tags">
+            <span class="skill-tag">Python</span>
+            <span class="skill-tag">BeautifulSoup</span>
+            <span class="skill-tag">Scrapy</span>
+            <span class="skill-tag">Selenium</span>
+            <span class="skill-tag">Playwright</span>
+            <span class="skill-tag">Requests</span>
+          </div>
+        </div>
+
+        <div class="skill-group">
+          <h3 class="skill-group-title" style="--group-color:#FF3EA5">Analyze</h3>
+          <div class="skill-tags">
+            <span class="skill-tag">Pandas</span>
+            <span class="skill-tag">NumPy</span>
+            <span class="skill-tag">SQL</span>
+            <span class="skill-tag">Matplotlib</span>
+            <span class="skill-tag">Jupyter</span>
+            <span class="skill-tag">PostgreSQL</span>
+          </div>
+        </div>
+
+        <div class="skill-group">
+          <h3 class="skill-group-title" style="--group-color:#FFB020">Automate</h3>
+          <div class="skill-tags">
+            <span class="skill-tag">FastAPI</span>
+            <span class="skill-tag">Flask</span>
+            <span class="skill-tag">Cron</span>
+            <span class="skill-tag">Docker</span>
+            <span class="skill-tag">REST APIs</span>
+            <span class="skill-tag">GitHub Actions</span>
+          </div>
+        </div>
+
+        <div class="skill-group">
+          <h3 class="skill-group-title" style="--group-color:#7B5CFF">Ship</h3>
+          <div class="skill-tags">
+            <span class="skill-tag">PyQt</span>
+            <span class="skill-tag">Electron</span>
+            <span class="skill-tag">Kivy</span>
+            <span class="skill-tag">React Native</span>
+            <span class="skill-tag">SQLite</span>
+            <span class="skill-tag">Git</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       PROJECTS
+  ============================================ -->
+  <section class="section" id="projects">
+    <div class="section-inner">
+      <h2 class="section-title"><span class="section-title-num">02.</span> Projects</h2>
+      <p class="section-sub">A few featured builds below. Expand for the full list with filters.</p>
+
+      <!-- Filter chips (hidden until expanded, shown always on wide screens if desired) -->
+      <div class="filter-chips" id="filterChips" hidden>
+        <button class="chip is-active" data-filter="all" type="button">All</button>
+        <button class="chip" data-filter="scrape" type="button" style="--chip-color:#00E5FF">Scrape</button>
+        <button class="chip" data-filter="analyze" type="button" style="--chip-color:#FF3EA5">Analyze</button>
+        <button class="chip" data-filter="automate" type="button" style="--chip-color:#FFB020">Automate</button>
+        <button class="chip" data-filter="ship" type="button" style="--chip-color:#7B5CFF">Ship</button>
+      </div>
+
+      <!-- Featured (default 3) -->
+      <div class="project-grid" id="featuredGrid"></div>
+
+      <!-- Full grid (hidden by default) -->
+      <div class="project-grid" id="fullGrid" hidden></div>
+
+      <div class="projects-more">
+        <button class="btn btn-outline" id="viewAllBtn" type="button" aria-expanded="false" aria-controls="fullGrid">
+          View all projects
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       EXPERIENCE — COMMIT LOG / GIT GRAPH
+  ============================================ -->
+  <section class="section section-alt" id="experience">
+    <div class="section-inner">
+      <h2 class="section-title"><span class="section-title-num">03.</span> Experience</h2>
+      <p class="section-sub">Career history, styled as a git commit log — placeholder entries.</p>
+
+      <div class="git-log" id="gitLog">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       BLOG / LOG — stdout.log
+  ============================================ -->
+  <section class="section" id="log">
+    <div class="section-inner">
+      <h2 class="section-title"><span class="section-title-num">04.</span> Log</h2>
+      <p class="section-sub">Notes and write-ups, styled like console output — placeholder entries.</p>
+
+      <div class="stdout-window">
+        <div class="terminal-titlebar">
+          <span class="terminal-dot dot-red"></span>
+          <span class="terminal-dot dot-yellow"></span>
+          <span class="terminal-dot dot-green"></span>
+          <span class="terminal-titletext">stdout.log</span>
+        </div>
+        <div class="stdout-body" id="stdoutBody">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       CONTACT — POST /contact
+  ============================================ -->
+  <section class="section section-alt" id="contact">
+    <div class="section-inner">
+      <h2 class="section-title"><span class="section-title-num">05.</span> Contact</h2>
+      <p class="section-sub">Send a message below, or reach out directly via the links.</p>
+
+      <div class="contact-grid">
+
+        <div class="contact-card">
+          <div class="terminal-titlebar">
+            <span class="terminal-dot dot-red"></span>
+            <span class="terminal-dot dot-yellow"></span>
+            <span class="terminal-dot dot-green"></span>
+            <span class="terminal-titletext">POST /contact</span>
+          </div>
+
+          <form class="contact-form" id="contactForm" novalidate>
+            <p class="contact-form-status" id="formStatus" role="status" aria-live="polite"></p>
+
+            <div class="form-field">
+              <label for="fieldName">name</label>
+              <input type="text" id="fieldName" name="name" autocomplete="name" placeholder="Jane Doe" required>
+              <span class="form-error" id="errorName"></span>
+            </div>
+
+            <div class="form-field">
+              <label for="fieldEmail">email</label>
+              <input type="email" id="fieldEmail" name="email" autocomplete="email" placeholder="jane@example.com" required>
+              <span class="form-error" id="errorEmail"></span>
+            </div>
+
+            <div class="form-field">
+              <label for="fieldMessage">message</label>
+              <textarea id="fieldMessage" name="message" rows="5" placeholder="Tell me about your project..." required></textarea>
+              <span class="form-error" id="errorMessage"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+              <span class="btn-prompt">$</span> send_message()
+            </button>
+          </form>
+        </div>
+
+        <div class="contact-links">
+          <a class="contact-link-card" href="mailto:yourname@example.com" data-profile-field="email">
+            <span class="contact-link-icon" aria-hidden="true">✉</span>
+            <span>
+              <span class="contact-link-label">Email</span>
+              <span class="contact-link-value">yourname@example.com</span>
+            </span>
+          </a>
+          <a class="contact-link-card" href="https://github.com/yourname" target="_blank" rel="noopener noreferrer" data-profile-field="github">
+            <span class="contact-link-icon" aria-hidden="true">⌘</span>
+            <span>
+              <span class="contact-link-label">GitHub</span>
+              <span class="contact-link-value">github.com/yourname</span>
+            </span>
+          </a>
+          <a class="contact-link-card" href="https://linkedin.com/in/yourname" target="_blank" rel="noopener noreferrer" data-profile-field="linkedin">
+            <span class="contact-link-icon" aria-hidden="true">in</span>
+            <span>
+              <span class="contact-link-label">LinkedIn</span>
+              <span class="contact-link-value">linkedin.com/in/yourname</span>
+            </span>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================
+     FOOTER
+============================================ -->
+<footer class="footer">
+  <div class="section-inner footer-inner">
+    <p>&copy; <span id="footerYear"></span> yourname. Built with vanilla HTML/CSS/JS. Hosted on GitHub Pages.</p>
+    <a href="#hero" class="footer-top">Back to top ↑</a>
+  </div>
+</footer>
+
+<!-- ============================================
+     PROJECT MODAL
+============================================ -->
+<div class="modal-overlay" id="modalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" id="modal">
+    <button class="modal-close" id="modalClose" type="button" aria-label="Close dialog">&times;</button>
+
+    <div class="modal-gallery" id="modalGallery">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="modal-body">
+      <span class="modal-stage-tag" id="modalStageTag"></span>
+      <h3 class="modal-title" id="modalTitle"></h3>
+      <p class="modal-desc" id="modalDesc"></p>
+
+      <div class="modal-tech" id="modalTech"></div>
+
+      <div class="modal-actions" id="modalActions">
+        <!-- populated by JS, buttons omitted if links missing -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- type="module" is required because script.js uses ES module imports
+     to pull in js/firebase-data.js / js/firebase-config.js. Works on
+     GitHub Pages with no build step. -->
+<script type="module" src="js/script.js"></script>
+</body>
+</html>

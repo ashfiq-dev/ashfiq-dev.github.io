@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Kept out of search engines on purpose — this is an internal tool, not a public page. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Admin · Portfolio</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<!--
+  admin-ui.js owns everything inside this element. Nothing is rendered
+  here until Firebase Authentication confirms a signed-in user — see
+  js/admin-ui.js -> boot() and the security note at the top of that file.
+-->
+<div id="admin-root">
+  <div class="screen-center">
+    <span class="spinner"></span>
+  </div>
+</div>
+
+<script type="module">
+  import { boot } from './js/admin-ui.js';
+  boot();
+</script>
+
+</body>
+</html>
