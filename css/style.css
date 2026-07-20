@@ -362,7 +362,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
 /* Two SVGs (horizontal + vertical), toggled by viewport width so mobile
    gets a layout that actually fits a narrow screen instead of a
    squeezed-down horizontal one. See the 720px breakpoint below. */
-.pipeline-svg-vertical{ display:none; max-width:280px; margin:0 auto; }
+.pipeline-svg-vertical{ display:none; max-width:190px; margin:0 auto; }
 
 .pipeline-path{
   stroke-dasharray:6 6;
@@ -944,9 +944,18 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
   .hero-cta .btn{ justify-content:center; }
 
   .pipeline-svg .stage-label{ font-size:11px; }
+  .pipeline-svg-vertical .stage-label{ font-size:9px; }
 
   .pipeline-svg-horizontal{ display:none; }
   .pipeline-svg-vertical{ display:block; }
+  .pipeline-svg-vertical .stage-node.is-active .stage-circle-ring{
+    animation-name: pulseRingSmall;
+  }
+}
+
+@keyframes pulseRingSmall{
+  0%{ r:20; opacity:0.7; }
+  100%{ r:30; opacity:0; }
 }
 
 @media (max-width: 480px){

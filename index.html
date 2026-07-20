@@ -137,7 +137,7 @@
 
         <!-- Mobile: vertical layout, same stage-node classes/data-attrs so
              existing click/keyboard/filter JS works on this one too. -->
-        <svg class="pipeline-svg pipeline-svg-vertical" viewBox="0 0 260 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline diagram with four stages: Scrape, Analyze, Automate, Ship">
+        <svg class="pipeline-svg pipeline-svg-vertical" viewBox="0 0 200 480" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline diagram with four stages: Scrape, Analyze, Automate, Ship">
           <defs>
             <linearGradient id="pathGradientV" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#00E5FF"/>
@@ -147,36 +147,36 @@
             </linearGradient>
           </defs>
 
-          <path id="pipelinePathVertical" class="pipeline-path" d="M 130 90 C 130 220, 60 220, 60 350 C 60 480, 200 480, 200 610 C 200 740, 130 740, 130 810" stroke="url(#pathGradientV)" stroke-width="3" stroke-linecap="round"/>
+          <path id="pipelinePathVertical" class="pipeline-path" d="M 100 45 C 100 110, 45 110, 45 175 C 45 240, 155 240, 155 305 C 155 370, 100 370, 100 420" stroke="url(#pathGradientV)" stroke-width="2.5" stroke-linecap="round"/>
 
           <g class="pipeline-particles" id="pipelineParticlesVertical" aria-hidden="true"></g>
 
           <g class="stage-node" data-stage="scrape" tabindex="0" role="button" aria-pressed="false" aria-label="Filter projects by Scrape stage">
-            <circle cx="130" cy="90" r="34" class="stage-circle" style="--stage-color:#00E5FF"/>
-            <circle cx="130" cy="90" r="34" class="stage-circle-ring" style="--stage-color:#00E5FF"/>
-            <text x="130" y="95" class="stage-icon" text-anchor="middle">◈</text>
-            <text x="130" y="145" class="stage-label" text-anchor="middle">SCRAPE</text>
+            <circle cx="100" cy="45" r="20" class="stage-circle" style="--stage-color:#00E5FF"/>
+            <circle cx="100" cy="45" r="20" class="stage-circle-ring" style="--stage-color:#00E5FF"/>
+            <text x="100" y="51" class="stage-icon" text-anchor="middle">◈</text>
+            <text x="100" y="80" class="stage-label" text-anchor="middle">SCRAPE</text>
           </g>
 
           <g class="stage-node" data-stage="analyze" tabindex="0" role="button" aria-pressed="false" aria-label="Filter projects by Analyze stage">
-            <circle cx="60" cy="350" r="34" class="stage-circle" style="--stage-color:#FF3EA5"/>
-            <circle cx="60" cy="350" r="34" class="stage-circle-ring" style="--stage-color:#FF3EA5"/>
-            <text x="60" y="355" class="stage-icon" text-anchor="middle">◆</text>
-            <text x="60" y="405" class="stage-label" text-anchor="middle">ANALYZE</text>
+            <circle cx="45" cy="175" r="20" class="stage-circle" style="--stage-color:#FF3EA5"/>
+            <circle cx="45" cy="175" r="20" class="stage-circle-ring" style="--stage-color:#FF3EA5"/>
+            <text x="45" y="181" class="stage-icon" text-anchor="middle">◆</text>
+            <text x="45" y="210" class="stage-label" text-anchor="middle">ANALYZE</text>
           </g>
 
           <g class="stage-node" data-stage="automate" tabindex="0" role="button" aria-pressed="false" aria-label="Filter projects by Automate stage">
-            <circle cx="200" cy="610" r="34" class="stage-circle" style="--stage-color:#FFB020"/>
-            <circle cx="200" cy="610" r="34" class="stage-circle-ring" style="--stage-color:#FFB020"/>
-            <text x="200" y="615" class="stage-icon" text-anchor="middle">◉</text>
-            <text x="200" y="665" class="stage-label" text-anchor="middle">AUTOMATE</text>
+            <circle cx="155" cy="305" r="20" class="stage-circle" style="--stage-color:#FFB020"/>
+            <circle cx="155" cy="305" r="20" class="stage-circle-ring" style="--stage-color:#FFB020"/>
+            <text x="155" y="311" class="stage-icon" text-anchor="middle">◉</text>
+            <text x="155" y="340" class="stage-label" text-anchor="middle">AUTOMATE</text>
           </g>
 
           <g class="stage-node" data-stage="ship" tabindex="0" role="button" aria-pressed="false" aria-label="Filter projects by Ship stage">
-            <circle cx="130" cy="810" r="34" class="stage-circle" style="--stage-color:#7B5CFF"/>
-            <circle cx="130" cy="810" r="34" class="stage-circle-ring" style="--stage-color:#7B5CFF"/>
-            <text x="130" y="815" class="stage-icon" text-anchor="middle">▲</text>
-            <text x="130" y="865" class="stage-label" text-anchor="middle">SHIP</text>
+            <circle cx="100" cy="420" r="20" class="stage-circle" style="--stage-color:#7B5CFF"/>
+            <circle cx="100" cy="420" r="20" class="stage-circle-ring" style="--stage-color:#7B5CFF"/>
+            <text x="100" y="426" class="stage-icon" text-anchor="middle">▲</text>
+            <text x="100" y="455" class="stage-label" text-anchor="middle">SHIP</text>
           </g>
         </svg>
 
