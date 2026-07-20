@@ -3,18 +3,17 @@
    Vanilla JS, no framework, no build step. Safe to open directly or host
    on GitHub Pages.
 
-   ONLY CHANGE FROM THE ORIGINAL STATIC VERSION:
-   Content that used to live in hard-coded arrays (PROJECTS, EXPERIENCE,
-   LOG_ENTRIES, profile bio/contact links) is now fetched from Firestore
-   via js/firebase-data.js on page load, and rendered once it arrives.
-   If Firestore isn't reachable or isn't configured yet, firebase-data.js
-   silently returns the exact same fallback content this file used to
-   contain, so the page never crashes or shows blank sections.
+   All content (profile, projects, skills, experience, log posts) is
+   fetched live from Firestore via js/firebase-data.js on page load and
+   rendered once it arrives. There is no hard-coded dummy/placeholder
+   content anywhere — if a Firestore collection has no documents yet,
+   the matching section renders a small "nothing here yet" empty state
+   instead of fake data.
 
    All rendering logic, filtering, the modal, the pipeline SVG, the
-   typewriter effect, the contact form, etc. work EXACTLY as before —
+   typewriter effect, the contact form, etc. work the same as before —
    they just now operate on data that arrived asynchronously instead of
-   a hard-coded array.
+   a hard-coded array, and handle the empty case explicitly.
 
    Sections:
    1.  Utilities
@@ -70,13 +69,13 @@ import {
   const isImageUrl = (str = '') => /^https?:\/\//.test(str);
 
   /* ------------------------------------------------------------------ */
-  /* 2. DATA — now fetched from Firestore (with static fallback)         */
+  /* 2. DATA — fetched live from Firestore, no dummy content             */
   /* ------------------------------------------------------------------ */
-  /* These used to be hard-coded arrays. They're now filled in by
-     loadAllData() below, using js/firebase-data.js, before anything
-     tries to render. Every getter in firebase-data.js always resolves
-     (never rejects), returning fallback/dummy content on any failure,
-     so the variables below are always populated with something usable. */
+  /* Filled in by loadAllData() below, using js/firebase-data.js, before
+     anything tries to render. Every getter in firebase-data.js always
+     resolves (never rejects) — collections resolve to [] and the
+     profile resolves to an empty object when there's no data yet, so
+     these variables are always at least a safe empty value. */
 
   let PROJECTS = [];
   let SKILLS = [];
@@ -267,10 +266,15 @@ import {
     const target = $('#typewriterTarget');
     if (!target) return;
 
-    // Prefer live profile bio (from Firestore or fallback data); if for
-    // any reason PROFILE isn't populated yet, fall back to whatever text
-    // is already baked into the HTML's data-full-text attribute.
-    const fullText = (PROFILE && PROFILE.bio) || target.getAttribute('data-full-text') || '';
+    // Bio comes from Firestore only. If it hasn't been added yet, show
+    // a small "not added yet" note instead of typing nothing forever.
+    const fullText = (PROFILE && PROFILE.bio) || '';
+    if (!fullText) {
+      target.textContent = 'No bio added yet — add one in the admin panel.';
+      const cursor = target.nextElementSibling;
+      if (cursor && cursor.classList.contains('terminal-cursor')) cursor.style.display = 'none';
+      return;
+    }
     target.setAttribute('data-full-text', fullText);
     let hasRun = false;
 
@@ -337,6 +341,12 @@ import {
 
   function renderProjectGrid(container, projects) {
     if (!container) return;
+
+    if (!projects || projects.length === 0) {
+      container.innerHTML = `<p class="empty-state">No projects added yet. Add some from the admin panel.</p>`;
+      return;
+    }
+
     container.innerHTML = projects.map(projectCardHTML).join('');
     $$('.project-card', container).forEach((card) => {
       card.addEventListener('click', () => {
@@ -567,6 +577,11 @@ import {
     const container = $('#gitLog');
     if (!container) return;
 
+    if (!EXPERIENCE || EXPERIENCE.length === 0) {
+      container.innerHTML = `<p class="empty-state">No experience entries added yet. Add some from the admin panel.</p>`;
+      return;
+    }
+
     container.innerHTML = EXPERIENCE.map((c) => `
       <div class="commit" style="--commit-color:${c.color || stageToColorVar(c.stage)}">
         <div class="commit-header">
@@ -588,6 +603,11 @@ import {
   function initStdoutLog() {
     const container = $('#stdoutBody');
     if (!container) return;
+
+    if (!LOG_ENTRIES || LOG_ENTRIES.length === 0) {
+      container.innerHTML = `<p class="empty-state">No log entries added yet. Add some from the admin panel.</p>`;
+      return;
+    }
 
     const levelClass = (level) => (level === 'OK' ? 'log-level-ok' : 'log-level-info');
 
@@ -712,49 +732,61 @@ import {
   function initProfile() {
     if (!PROFILE) return;
 
-    // Optional convention: any element with data-profile-field="name"
-    // (or "bio", "email", "github", "linkedin") gets its text content
-    // replaced with live profile data if present in the HTML. Each
-    // field only overwrites the placeholder once real data exists —
-    // an empty/未filled Firestore field should never blank out the
-    // static fallback text.
+    // Any element with data-profile-field="name" (or "bio", "email",
+    // "github", "linkedin") gets its text content replaced with live
+    // profile data. If the field is still empty in Firestore, we show
+    // a short "not added yet" note instead of leaving placeholder text
+    // in the markup.
+    const nameEls = $$('[data-profile-field="name"]');
+    nameEls.forEach((el) => { el.textContent = PROFILE.name || 'Name not set'; });
     if (PROFILE.name) {
-      const nameEls = $$('[data-profile-field="name"]');
-      nameEls.forEach((el) => { el.textContent = PROFILE.name; });
+      document.title = document.title.replace(/^[^—]*/, `${PROFILE.name} `);
+      const initialEl = document.getElementById('aboutAvatarInitial');
+      if (initialEl) initialEl.textContent = PROFILE.name.trim().charAt(0).toUpperCase() || '?';
     }
 
-    if (PROFILE.bio) {
-      const bioEls = $$('[data-profile-field="bio"]');
-      bioEls.forEach((el) => { el.textContent = PROFILE.bio; });
-    }
+    const bioEls = $$('[data-profile-field="bio"]:not(#typewriterTarget)');
+    bioEls.forEach((el) => { el.textContent = PROFILE.bio || 'Bio not added yet.'; });
 
     const contact = PROFILE.contact || {};
 
-    if (contact.email) {
-      const emailEls = $$('[data-profile-field="email"]');
-      emailEls.forEach((el) => {
-        el.textContent = contact.email;
+    const emailEls = $$('[data-profile-field="email"]');
+    emailEls.forEach((el) => {
+      const valueEl = el.querySelector('.contact-link-value');
+      if (contact.email) {
         if (el.tagName === 'A') el.href = `mailto:${contact.email}`;
-      });
-    }
+        if (valueEl) valueEl.textContent = contact.email;
+        else el.textContent = contact.email;
+      } else {
+        if (el.tagName === 'A') el.removeAttribute('href');
+        if (valueEl) valueEl.textContent = 'Not added yet';
+        else el.textContent = 'Not added yet';
+      }
+    });
 
-    if (contact.github) {
-      const githubEls = $$('[data-profile-field="github"]');
-      githubEls.forEach((el) => {
+    const githubEls = $$('[data-profile-field="github"]');
+    githubEls.forEach((el) => {
+      const valueEl = el.querySelector('.contact-link-value');
+      if (contact.github) {
         if (el.tagName === 'A') el.href = contact.github;
-        const valueEl = el.querySelector('.contact-link-value');
         if (valueEl) valueEl.textContent = contact.github.replace(/^https?:\/\//, '');
-      });
-    }
+      } else {
+        if (el.tagName === 'A') el.removeAttribute('href');
+        if (valueEl) valueEl.textContent = 'Not added yet';
+      }
+    });
 
-    if (contact.linkedin) {
-      const linkedinEls = $$('[data-profile-field="linkedin"]');
-      linkedinEls.forEach((el) => {
+    const linkedinEls = $$('[data-profile-field="linkedin"]');
+    linkedinEls.forEach((el) => {
+      const valueEl = el.querySelector('.contact-link-value');
+      if (contact.linkedin) {
         if (el.tagName === 'A') el.href = contact.linkedin;
-        const valueEl = el.querySelector('.contact-link-value');
         if (valueEl) valueEl.textContent = contact.linkedin.replace(/^https?:\/\//, '');
-      });
-    }
+      } else {
+        if (el.tagName === 'A') el.removeAttribute('href');
+        if (valueEl) valueEl.textContent = 'Not added yet';
+      }
+    });
 
     // Profile photo: swap the placeholder initial for the real image
     // once a photoUrl exists. Previously there was no code path at all
@@ -776,13 +808,10 @@ import {
   /* ------------------------------------------------------------------ */
   /* 14. SKILLS GRID (Firestore-driven)                                  */
   /* ------------------------------------------------------------------ */
-  /* The static site originally hard-coded the four skill groups
-     (Scrape / Analyze / Automate / Ship) directly in index.html. That
-     markup is still there as a no-JS fallback, but as soon as SKILLS
-     has loaded (from Firestore or the static fallback list in
-     firebase-data.js) we replace it with a freshly rendered version, so
-     editing the "skills" collection in Firestore actually changes what
-     visitors see. */
+  /* Fully replaces whatever placeholder markup shipped in the HTML with
+     live data from the "skills" collection in Firestore. If that
+     collection is empty, we show an explicit empty state rather than
+     leaving any hard-coded skill tags on the page. */
 
   function skillGroupHTML(group) {
     const color = group.color || 'var(--c-scrape)';
@@ -799,7 +828,11 @@ import {
   function initSkillsGrid() {
     const container = $('.skills-grid');
     if (!container) return;
-    if (!Array.isArray(SKILLS) || SKILLS.length === 0) return; // keep static markup as last-resort fallback
+
+    if (!Array.isArray(SKILLS) || SKILLS.length === 0) {
+      container.innerHTML = `<p class="empty-state">No skills added yet. Add some from the admin panel.</p>`;
+      return;
+    }
 
     container.innerHTML = SKILLS.map(skillGroupHTML).join('');
   }

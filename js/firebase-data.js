@@ -9,10 +9,13 @@
      - experience   (collection, rendered as a commit log)
      - blogPosts    (collection, rendered as stdout.log)
 
-   Design goal: script.js should never crash or show a blank page.
-   Every exported getter below ALWAYS resolves with usable data — either
-   live Firestore data, or the built-in static/dummy fallback — and never
-   rejects. Callers don't need try/catch.
+   Design goal: script.js should never crash, even before any content
+   has been added. Every exported getter below ALWAYS resolves — either
+   with real Firestore data, or with an empty result ([] for
+   collections, an empty profile object for the profile) — and never
+   rejects. Callers don't need try/catch. There is no dummy/placeholder
+   content anywhere in this file; every field visitors see comes from
+   Firestore.
 
    Uses the Firebase v9+ modular SDK via CDN imports (no npm, no bundler),
    so this runs as-is on GitHub Pages.
@@ -71,244 +74,24 @@ import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
 */
 
 /* ------------------------------------------------------------------ */
-/* 2. STATIC / DUMMY FALLBACK DATA                                     */
+/* 2. EMPTY DEFAULTS                                                   */
 /* ------------------------------------------------------------------ */
-/* Used whenever Firestore is unreachable OR firebase-config.js still
-   has placeholder values. Keeps the exact same placeholder content the
-   static site shipped with, so nothing changes until you fill in your
-   own Firebase project and add real documents. */
+/* No dummy/placeholder content ships with this site anymore. Every
+   getter below returns real Firestore data only. If a collection has
+   no documents yet (or Firestore isn't reachable), the getter simply
+   returns an empty result — script.js renders an "empty state" for
+   that section instead of any built-in dummy content. */
 
-const FALLBACK_PROFILE = {
-  name: 'yourname',
-  bio:
-    "Hi, I'm yourname. I'm a Python developer who lives at the intersection of data and automation — building scrapers that collect it, pipelines that analyze it, scripts that automate it, and apps that ship it to real users. I care about clean code, reliable systems, and turning messy raw data into something useful. Currently open to freelance work and full-time opportunities. This bio is placeholder text — edit me in Firestore or here.",
+const EMPTY_PROFILE = {
+  name: '',
+  bio: '',
   photoUrl: '',
   contact: {
-    email: 'yourname@example.com',
-    github: 'https://github.com/yourname',
-    linkedin: 'https://linkedin.com/in/yourname',
+    email: '',
+    github: '',
+    linkedin: '',
   },
 };
-
-const FALLBACK_PROJECTS = [
-  {
-    id: 'price-tracker',
-    title: 'E-Commerce Price Tracker',
-    shortDesc: 'Scrapes product listings daily and alerts on price drops.',
-    fullDesc:
-      'A scheduled scraper that polls a set of product pages every day, ' +
-      'stores price history in SQLite, and sends an email alert when a ' +
-      'tracked item drops below a target price. Built to survive layout ' +
-      'changes with resilient CSS selectors and automatic retries.',
-    stage: 'scrape',
-    tech: ['Python', 'BeautifulSoup', 'Requests', 'SQLite', 'Cron'],
-    github: 'https://github.com/yourname/price-tracker',
-    live: '',
-    download: '',
-    featured: true,
-    gallery: [
-      'Dashboard showing tracked items and price history chart',
-      'Email alert sample for a price drop',
-    ],
-  },
-  {
-    id: 'sales-dashboard',
-    title: 'Regional Sales Dashboard',
-    shortDesc: 'Cleans messy CSV exports into a live Pandas-powered dashboard.',
-    fullDesc:
-      'Ingests weekly CSV exports from a legacy POS system, normalizes ' +
-      'inconsistent column names and date formats, then generates a set ' +
-      'of interactive charts summarizing revenue by region and product ' +
-      'category. Includes a Jupyter notebook for ad-hoc analysis.',
-    stage: 'analyze',
-    tech: ['Pandas', 'NumPy', 'Matplotlib', 'Jupyter'],
-    github: 'https://github.com/yourname/sales-dashboard',
-    live: 'https://yourname.github.io/sales-dashboard-demo/',
-    download: '',
-    featured: true,
-    gallery: [
-      'Revenue-by-region bar chart',
-      'Category breakdown pie chart',
-      'Notebook screenshot with cleaning steps',
-    ],
-  },
-  {
-    id: 'invoice-bot',
-    title: 'Invoice Automation Bot',
-    shortDesc: 'Generates and emails monthly invoices from a Google Sheet.',
-    fullDesc:
-      'A small FastAPI service plus scheduled job that reads client and ' +
-      'line-item data from a Google Sheet, renders a PDF invoice from an ' +
-      'HTML template, and emails it automatically on the first of every ' +
-      'month. Deployed with Docker and triggered by GitHub Actions.',
-    stage: 'automate',
-    tech: ['FastAPI', 'Docker', 'GitHub Actions', 'REST APIs'],
-    github: 'https://github.com/yourname/invoice-bot',
-    live: '',
-    download: '',
-    featured: true,
-    gallery: ['Generated invoice PDF sample', 'GitHub Actions run log'],
-  },
-  {
-    id: 'desktop-notes',
-    title: 'Offline Notes Desktop App',
-    shortDesc: 'A lightweight PyQt notes app with local SQLite storage.',
-    fullDesc:
-      'A distraction-free notes application for Windows and Linux, built ' +
-      'with PyQt for the interface and SQLite for local-only storage. ' +
-      'Supports markdown preview, tagging, and full-text search across ' +
-      'all notes. Packaged into a standalone executable for distribution.',
-    stage: 'ship',
-    tech: ['PyQt', 'SQLite', 'Git'],
-    github: 'https://github.com/yourname/desktop-notes',
-    live: '',
-    download: 'https://github.com/yourname/desktop-notes/releases/latest',
-    featured: false,
-    gallery: [
-      'Main notes list view',
-      'Markdown preview pane',
-      'Full-text search in action',
-    ],
-  },
-  {
-    id: 'weather-cli',
-    title: 'Weather CLI + API Wrapper',
-    shortDesc: 'A tiny CLI and Python package wrapping a public weather API.',
-    fullDesc:
-      'A pip-installable package that wraps a public weather API with ' +
-      'friendly Python bindings, response caching, and a command-line ' +
-      'interface for quick lookups from the terminal. Published with a ' +
-      'full test suite and continuous integration.',
-    stage: 'scrape',
-    tech: ['Python', 'Requests', 'Click'],
-    github: 'https://github.com/yourname/weather-cli',
-    live: '',
-    download: '',
-    featured: false,
-    gallery: ['Terminal output for a sample lookup'],
-  },
-  {
-    id: 'mobile-habit-tracker',
-    title: 'Habit Tracker Mobile App',
-    shortDesc: 'A cross-platform habit tracker built with React Native.',
-    fullDesc:
-      'A simple daily habit tracker for iOS and Android, built with React ' +
-      'Native and a lightweight local database. Includes streak tracking, ' +
-      'daily reminders, and a weekly summary screen. Backend automation ' +
-      'handles nightly analytics rollups.',
-    stage: 'ship',
-    tech: ['React Native', 'SQLite'],
-    github: '',
-    live: '',
-    download: 'https://example.com/habit-tracker.apk',
-    featured: false,
-    gallery: ['Home screen with streaks', 'Weekly summary screen'],
-  },
-];
-
-const FALLBACK_SKILLS = [
-  { group: 'Scrape', stage: 'scrape', color: '#00E5FF', tags: ['Python', 'BeautifulSoup', 'Scrapy', 'Selenium', 'Playwright', 'Requests'] },
-  { group: 'Analyze', stage: 'analyze', color: '#FF3EA5', tags: ['Pandas', 'NumPy', 'SQL', 'Matplotlib', 'Jupyter', 'PostgreSQL'] },
-  { group: 'Automate', stage: 'automate', color: '#FFB020', tags: ['FastAPI', 'Flask', 'Cron', 'Docker', 'REST APIs', 'GitHub Actions'] },
-  { group: 'Ship', stage: 'ship', color: '#7B5CFF', tags: ['PyQt', 'Electron', 'Kivy', 'React Native', 'SQLite', 'Git'] },
-];
-
-const FALLBACK_EXPERIENCE = [
-  {
-    hash: 'a1b2c3d',
-    date: '2024 — Present',
-    title: 'Freelance Python Automation Developer',
-    role: 'Self-employed',
-    desc:
-      'Building scrapers, ETL pipelines, and internal tooling for small ' +
-      'businesses. Delivered 12+ automation projects covering data ' +
-      'collection, reporting, and workflow automation.',
-    branch: 'main',
-    stage: 'automate',
-  },
-  {
-    hash: 'e4f5a6b',
-    date: '2022 — 2024',
-    title: 'Data Engineer',
-    role: 'Example Analytics Co.',
-    desc:
-      'Owned ingestion pipelines for third-party data sources, migrated ' +
-      'batch jobs to scheduled Airflow DAGs, and cut nightly processing ' +
-      'time by roughly 40% through query and pipeline optimization.',
-    branch: 'feature/pipelines',
-    stage: 'analyze',
-  },
-  {
-    hash: '9c8d7e6',
-    date: '2020 — 2022',
-    title: 'Junior Backend Developer',
-    role: 'Example Startup Inc.',
-    desc:
-      'Built and maintained REST APIs powering the core product, wrote ' +
-      'the first automated test suite for the service, and set up CI/CD ' +
-      'with GitHub Actions.',
-    branch: 'feature/api-v2',
-    stage: 'scrape',
-  },
-  {
-    hash: '5f4e3d2',
-    date: '2019 — 2020',
-    title: 'Computer Science, B.Sc.',
-    role: 'Example University',
-    desc:
-      'Graduated with a focus on data structures, algorithms, and ' +
-      'databases. Capstone project: a web scraper and dashboard for ' +
-      'tracking local housing market trends.',
-    branch: 'main',
-    stage: 'ship',
-  },
-];
-
-const FALLBACK_BLOG_POSTS = [
-  {
-    timestamp: '2026-06-02 09:14:03',
-    level: 'INFO',
-    title: 'Rewriting a scraper to survive site redesigns',
-    desc:
-      'Notes on moving from brittle CSS selectors to a more resilient, ' +
-      'attribute-based scraping strategy after a client site redesign ' +
-      'broke a year-old scraper overnight.',
-  },
-  {
-    timestamp: '2026-04-18 14:02:41',
-    level: 'OK',
-    title: 'Shipped v2.0 of the invoice automation bot',
-    desc:
-      'Added PDF templating, retry logic for flaky SMTP providers, and a ' +
-      'dry-run mode for testing changes without sending real emails.',
-  },
-  {
-    timestamp: '2026-02-27 11:30:10',
-    level: 'INFO',
-    title: 'Pandas groupby patterns I keep reaching for',
-    desc:
-      'A running list of groupby + agg patterns that come up constantly ' +
-      'in reporting work, collected mostly so future-me stops re-deriving ' +
-      'them from scratch.',
-  },
-  {
-    timestamp: '2025-12-05 08:47:55',
-    level: 'OK',
-    title: 'Cut nightly ETL runtime by 40%',
-    desc:
-      'A short write-up on profiling a slow nightly job, batching writes, ' +
-      'and replacing a Python loop with a vectorized Pandas operation.',
-  },
-  {
-    timestamp: '2025-10-11 16:20:37',
-    level: 'INFO',
-    title: 'Packaging a PyQt app for distribution',
-    desc:
-      'Notes on packaging a desktop notes app into standalone executables ' +
-      'for Windows and Linux, including the gotchas around bundled fonts ' +
-      'and icons.',
-  },
-];
 
 /* ------------------------------------------------------------------ */
 /* 3. FIREBASE APP / FIRESTORE INITIALIZATION (lazy, safe)             */
@@ -452,13 +235,13 @@ function normalizeBlogPost(doc) {
 
 function normalizeProfile(doc) {
   return {
-    name: doc.name || FALLBACK_PROFILE.name,
-    bio: doc.bio || FALLBACK_PROFILE.bio,
+    name: doc.name || '',
+    bio: doc.bio || '',
     photoUrl: doc.photoUrl || '',
     contact: {
-      email: (doc.contact && doc.contact.email) || FALLBACK_PROFILE.contact.email,
-      github: (doc.contact && doc.contact.github) || FALLBACK_PROFILE.contact.github,
-      linkedin: (doc.contact && doc.contact.linkedin) || FALLBACK_PROFILE.contact.linkedin,
+      email: (doc.contact && doc.contact.email) || '',
+      github: (doc.contact && doc.contact.github) || '',
+      linkedin: (doc.contact && doc.contact.linkedin) || '',
     },
   };
 }
@@ -469,30 +252,30 @@ function normalizeProfile(doc) {
 
 export async function getProjects() {
   const docs = await fetchCollectionSafe('projects', 'order');
-  if (!docs) return FALLBACK_PROJECTS;
+  if (!docs) return [];
   return docs.map(normalizeProject);
 }
 
 export async function getSkills() {
   const docs = await fetchCollectionSafe('skills', 'order');
-  if (!docs) return FALLBACK_SKILLS;
+  if (!docs) return [];
   return docs.map(normalizeSkillGroup);
 }
 
 export async function getExperience() {
   const docs = await fetchCollectionSafe('experience', 'order');
-  if (!docs) return FALLBACK_EXPERIENCE;
+  if (!docs) return [];
   return docs.map(normalizeExperience);
 }
 
 export async function getBlogPosts() {
   const docs = await fetchCollectionSafe('blogPosts', 'order');
-  if (!docs) return FALLBACK_BLOG_POSTS;
+  if (!docs) return [];
   return docs.map(normalizeBlogPost);
 }
 
 export async function getProfile() {
   const doc = await fetchProfileSafe();
-  if (!doc) return FALLBACK_PROFILE;
+  if (!doc) return EMPTY_PROFILE;
   return normalizeProfile(doc);
 }

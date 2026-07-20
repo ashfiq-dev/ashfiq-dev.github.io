@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>yourname — Python Automation & Data Engineer</title>
-<meta name="description" content="Portfolio of yourname — Python automation, scraping, data analytics, APIs, desktop & mobile apps.">
+<title>Portfolio — Python Automation & Data Engineer</title>
+<meta name="description" content="Portfolio — Python automation, scraping, data analytics, APIs, desktop & mobile apps.">
 
 <!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +26,7 @@
 <header class="navbar" id="navbar">
   <div class="navbar-inner">
     <a href="#hero" class="logo">
-      <span class="logo-bracket">&lt;</span><span data-profile-field="name">yourname</span><span class="logo-bracket">/&gt;</span>
+      <span class="logo-bracket">&lt;</span><span data-profile-field="name"></span><span class="logo-bracket">/&gt;</span>
     </a>
 
     <nav class="nav-links" id="navLinks">
@@ -71,8 +71,7 @@
         from raw data to real product.
       </h1>
       <p class="hero-sub">
-        Hi, I'm <strong data-profile-field="name">yourname</strong> — I scrape it, analyze it, automate it, and ship it.
-        Edit this placeholder bio with your real one-liner.
+        Hi, I'm <strong data-profile-field="name"></strong> — I scrape it, analyze it, automate it, and ship it.
       </p>
 
       <div class="hero-cta">
@@ -147,10 +146,10 @@
 
       <div class="about-avatar-wrap">
         <div class="about-avatar" id="aboutAvatar">
-          <span class="about-avatar-initial" id="aboutAvatarInitial">Y</span>
+          <span class="about-avatar-initial" id="aboutAvatarInitial">?</span>
           <img class="about-avatar-photo" id="aboutAvatarPhoto" alt="Profile photo" style="display:none">
         </div>
-        <p class="about-avatar-caption" id="aboutAvatarCaption">/* replace with your profile photo */</p>
+        <p class="about-avatar-caption" id="aboutAvatarCaption">/* no profile photo added yet */</p>
       </div>
 
       <div class="terminal-window" id="terminalWindow">
@@ -162,8 +161,8 @@
         </div>
         <div class="terminal-body">
           <p class="terminal-line"><span class="terminal-prompt">$</span> python whoami.py</p>
-          <p class="terminal-output" id="typewriterTarget" data-profile-field="bio" data-full-text="Hi, I'm yourname. I'm a Python developer who lives at the intersection of data and automation — building scrapers that collect it, pipelines that analyze it, scripts that automate it, and apps that ship it to real users. I care about clean code, reliable systems, and turning messy raw data into something useful. Currently open to freelance work and full-time opportunities. This bio is placeholder text — edit me in index.html or in the Firestore "profile" collection."></span><span class="terminal-cursor" aria-hidden="true">▋</span></p>
-          <p class="terminal-line terminal-line-muted"># edit this bio in index.html — data-full-text attribute</p>
+          <p class="terminal-output" id="typewriterTarget" data-profile-field="bio" data-full-text=""></span><span class="terminal-cursor" aria-hidden="true">▋</span></p>
+          <p class="terminal-line terminal-line-muted"># bio is pulled live from the "profile" collection in Firestore</p>
         </div>
       </div>
 
@@ -176,58 +175,10 @@
   <section class="section section-alt" id="skills">
     <div class="section-inner">
       <h2 class="section-title"><span class="section-title-num">01.</span> Skills</h2>
-      <p class="section-sub">Tools and technologies across the pipeline — placeholder list, edit freely.</p>
+      <p class="section-sub">Tools and technologies across the pipeline, pulled live from Firestore.</p>
 
       <div class="skills-grid">
-
-        <div class="skill-group">
-          <h3 class="skill-group-title" style="--group-color:#00E5FF">Scrape</h3>
-          <div class="skill-tags">
-            <span class="skill-tag">Python</span>
-            <span class="skill-tag">BeautifulSoup</span>
-            <span class="skill-tag">Scrapy</span>
-            <span class="skill-tag">Selenium</span>
-            <span class="skill-tag">Playwright</span>
-            <span class="skill-tag">Requests</span>
-          </div>
-        </div>
-
-        <div class="skill-group">
-          <h3 class="skill-group-title" style="--group-color:#FF3EA5">Analyze</h3>
-          <div class="skill-tags">
-            <span class="skill-tag">Pandas</span>
-            <span class="skill-tag">NumPy</span>
-            <span class="skill-tag">SQL</span>
-            <span class="skill-tag">Matplotlib</span>
-            <span class="skill-tag">Jupyter</span>
-            <span class="skill-tag">PostgreSQL</span>
-          </div>
-        </div>
-
-        <div class="skill-group">
-          <h3 class="skill-group-title" style="--group-color:#FFB020">Automate</h3>
-          <div class="skill-tags">
-            <span class="skill-tag">FastAPI</span>
-            <span class="skill-tag">Flask</span>
-            <span class="skill-tag">Cron</span>
-            <span class="skill-tag">Docker</span>
-            <span class="skill-tag">REST APIs</span>
-            <span class="skill-tag">GitHub Actions</span>
-          </div>
-        </div>
-
-        <div class="skill-group">
-          <h3 class="skill-group-title" style="--group-color:#7B5CFF">Ship</h3>
-          <div class="skill-tags">
-            <span class="skill-tag">PyQt</span>
-            <span class="skill-tag">Electron</span>
-            <span class="skill-tag">Kivy</span>
-            <span class="skill-tag">React Native</span>
-            <span class="skill-tag">SQLite</span>
-            <span class="skill-tag">Git</span>
-          </div>
-        </div>
-
+        <!-- populated by JS from the "skills" collection -->
       </div>
     </div>
   </section>
@@ -269,7 +220,7 @@
   <section class="section section-alt" id="experience">
     <div class="section-inner">
       <h2 class="section-title"><span class="section-title-num">03.</span> Experience</h2>
-      <p class="section-sub">Career history, styled as a git commit log — placeholder entries.</p>
+      <p class="section-sub">Career history, styled as a git commit log, pulled live from Firestore.</p>
 
       <div class="git-log" id="gitLog">
         <!-- populated by JS -->
@@ -283,7 +234,7 @@
   <section class="section" id="log">
     <div class="section-inner">
       <h2 class="section-title"><span class="section-title-num">04.</span> Log</h2>
-      <p class="section-sub">Notes and write-ups, styled like console output — placeholder entries.</p>
+      <p class="section-sub">Notes and write-ups, styled like console output, pulled live from Firestore.</p>
 
       <div class="stdout-window">
         <div class="terminal-titlebar">
@@ -345,25 +296,25 @@
         </div>
 
         <div class="contact-links">
-          <a class="contact-link-card" href="mailto:yourname@example.com" data-profile-field="email">
+          <a class="contact-link-card" data-profile-field="email">
             <span class="contact-link-icon" aria-hidden="true">✉</span>
             <span>
               <span class="contact-link-label">Email</span>
-              <span class="contact-link-value">yourname@example.com</span>
+              <span class="contact-link-value"></span>
             </span>
           </a>
-          <a class="contact-link-card" href="https://github.com/yourname" target="_blank" rel="noopener noreferrer" data-profile-field="github">
+          <a class="contact-link-card" target="_blank" rel="noopener noreferrer" data-profile-field="github">
             <span class="contact-link-icon" aria-hidden="true">⌘</span>
             <span>
               <span class="contact-link-label">GitHub</span>
-              <span class="contact-link-value">github.com/yourname</span>
+              <span class="contact-link-value"></span>
             </span>
           </a>
-          <a class="contact-link-card" href="https://linkedin.com/in/yourname" target="_blank" rel="noopener noreferrer" data-profile-field="linkedin">
+          <a class="contact-link-card" target="_blank" rel="noopener noreferrer" data-profile-field="linkedin">
             <span class="contact-link-icon" aria-hidden="true">in</span>
             <span>
               <span class="contact-link-label">LinkedIn</span>
-              <span class="contact-link-value">linkedin.com/in/yourname</span>
+              <span class="contact-link-value"></span>
             </span>
           </a>
         </div>
@@ -379,7 +330,7 @@
 ============================================ -->
 <footer class="footer">
   <div class="section-inner footer-inner">
-    <p>&copy; <span id="footerYear"></span> <span data-profile-field="name">yourname</span>. Built with vanilla HTML/CSS/JS. Hosted on GitHub Pages.</p>
+    <p>&copy; <span id="footerYear"></span> <span data-profile-field="name"></span>. Built with vanilla HTML/CSS/JS. Hosted on GitHub Pages.</p>
     <a href="#hero" class="footer-top">Back to top ↑</a>
   </div>
 </footer>
