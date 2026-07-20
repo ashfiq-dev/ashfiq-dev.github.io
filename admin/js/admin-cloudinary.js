@@ -12,7 +12,7 @@
                        (gallery images)
    ========================================================================== */
 
-import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET, isCloudinaryConfigured } from '../../js/cloudinary-config.js';
+import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET, isCloudinaryConfigured } from './cloudinary-config.js';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB — keep in sync with the preset's own limit
@@ -24,7 +24,7 @@ const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB — keep in sync with the preset
  */
 export async function uploadSingleImage(file) {
   if (!isCloudinaryConfigured()) {
-    return { ok: false, message: 'Image uploads aren\u2019t set up yet. Check js/cloudinary-config.js.' };
+    return { ok: false, message: 'Image uploads aren\u2019t set up yet. Check admin/js/cloudinary-config.js.' };
   }
 
   const validation = validateFile(file);
@@ -66,7 +66,7 @@ export async function uploadSingleImage(file) {
  */
 export async function uploadMultipleImages(files) {
   if (!isCloudinaryConfigured()) {
-    return { ok: false, message: 'Image uploads aren\u2019t set up yet. Check js/cloudinary-config.js.', urls: [] };
+    return { ok: false, message: 'Image uploads aren\u2019t set up yet. Check admin/js/cloudinary-config.js.', urls: [] };
   }
 
   const results = await Promise.all(Array.from(files).map((file) => uploadSingleImage(file)));
