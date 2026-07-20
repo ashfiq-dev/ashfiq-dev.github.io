@@ -143,11 +143,15 @@ async function fetchCollectionSafe(collectionName, orderField) {
 
   try {
     const { db, firestoreModule } = ctx;
-    const { collection, getDocs, query, orderBy } = firestoreModule;
+    const { collection, getDocs, getDocsFromServer, query, orderBy } = firestoreModule;
+    // getDocsFromServer forces a real network read from Firestore and
+    // skips its local IndexedDB/memory cache, so admin-panel edits show
+    // up immediately for visitors instead of a stale cached snapshot.
+    const fetchDocs = getDocsFromServer || getDocs;
 
     const colRef = collection(db, collectionName);
     const q = orderField ? query(colRef, orderBy(orderField)) : colRef;
-    const snapshot = await getDocs(q);
+    const snapshot = await fetchDocs(q);
 
     if (snapshot.empty) return null; // treat "no documents yet" as "use fallback"
 
@@ -168,10 +172,11 @@ async function fetchProfileSafe() {
 
   try {
     const { db, firestoreModule } = ctx;
-    const { collection, getDocs, limit, query } = firestoreModule;
+    const { collection, getDocs, getDocsFromServer, limit, query } = firestoreModule;
+    const fetchDocs = getDocsFromServer || getDocs;
 
     const colRef = collection(db, 'profile');
-    const snapshot = await getDocs(query(colRef, limit(1)));
+    const snapshot = await fetchDocs(query(colRef, limit(1)));
     if (snapshot.empty) return null;
 
     return snapshot.docs[0].data();

@@ -866,6 +866,22 @@ import {
     PROFILE = profile;
   }
 
+  /** Re-fetches all content and re-renders every data-driven section.
+      Used both for the initial page load and for refreshing content
+      when the page becomes visible again (see the bfcache/visibility
+      listeners below), so admin-panel edits show up for visitors
+      without them needing to hard-refresh. */
+  async function refreshContent() {
+    await loadAllData();
+
+    initProfile();
+    initSkillsGrid();
+    initTypewriter();
+    initGitLog();
+    initStdoutLog();
+    applyFilterToGrids();
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
     initFooterYear();
     initThemeToggle();
@@ -873,8 +889,8 @@ import {
     initModal();
     initContactForm();
 
-    // Fetch all content (Firestore first, static fallback if unavailable)
-    // before rendering anything that depends on it.
+    // Fetch all content (always live from Firestore) before rendering
+    // anything that depends on it.
     await loadAllData();
 
     initProfile();
@@ -889,5 +905,23 @@ import {
     // Initial project render (featured grid only; full grid renders lazily
     // the first time "View all projects" is clicked).
     setFilter('all');
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* KEEP CONTENT FRESH — avoid showing stale data from browser bfcache  */
+  /* ------------------------------------------------------------------ */
+  /* If a visitor navigates back/forward, some browsers restore the page
+     from an in-memory snapshot (bfcache) instead of re-running this
+     script — so any admin-panel updates made in the meantime wouldn't
+     show up. `pageshow` with `event.persisted` fires in that exact
+     case, so we re-fetch and re-render then. We also refresh whenever
+     a background tab becomes visible again, in case the visitor left
+     the tab open while new content was published. */
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) refreshContent();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshContent();
   });
 })();
