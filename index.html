@@ -26,7 +26,7 @@
 <header class="navbar" id="navbar">
   <div class="navbar-inner">
     <a href="#hero" class="logo">
-      <span class="logo-bracket">&lt;</span>yourname<span class="logo-bracket">/&gt;</span>
+      <span class="logo-bracket">&lt;</span><span data-profile-field="name">yourname</span><span class="logo-bracket">/&gt;</span>
     </a>
 
     <nav class="nav-links" id="navLinks">
@@ -71,7 +71,7 @@
         from raw data to real product.
       </h1>
       <p class="hero-sub">
-        Hi, I'm <strong>yourname</strong> — I scrape it, analyze it, automate it, and ship it.
+        Hi, I'm <strong data-profile-field="name">yourname</strong> — I scrape it, analyze it, automate it, and ship it.
         Edit this placeholder bio with your real one-liner.
       </p>
 
@@ -146,10 +146,11 @@
     <div class="section-inner about-grid">
 
       <div class="about-avatar-wrap">
-        <div class="about-avatar">
-          <span class="about-avatar-initial">Y</span>
+        <div class="about-avatar" id="aboutAvatar">
+          <span class="about-avatar-initial" id="aboutAvatarInitial">Y</span>
+          <img class="about-avatar-photo" id="aboutAvatarPhoto" alt="Profile photo" style="display:none">
         </div>
-        <p class="about-avatar-caption">/* replace with your profile photo */</p>
+        <p class="about-avatar-caption" id="aboutAvatarCaption">/* replace with your profile photo */</p>
       </div>
 
       <div class="terminal-window" id="terminalWindow">
@@ -378,7 +379,7 @@
 ============================================ -->
 <footer class="footer">
   <div class="section-inner footer-inner">
-    <p>&copy; <span id="footerYear"></span> yourname. Built with vanilla HTML/CSS/JS. Hosted on GitHub Pages.</p>
+    <p>&copy; <span id="footerYear"></span> <span data-profile-field="name">yourname</span>. Built with vanilla HTML/CSS/JS. Hosted on GitHub Pages.</p>
     <a href="#hero" class="footer-top">Back to top ↑</a>
   </div>
 </footer>

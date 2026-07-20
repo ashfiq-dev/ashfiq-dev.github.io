@@ -65,6 +65,10 @@ import {
       "'": '&#39;',
     }[ch]));
 
+  /** True for a real image URL (Cloudinary etc.); false for the
+      fallback data's plain-text captions like "Dashboard showing…". */
+  const isImageUrl = (str = '') => /^https?:\/\//.test(str);
+
   /* ------------------------------------------------------------------ */
   /* 2. DATA — now fetched from Firestore (with static fallback)         */
   /* ------------------------------------------------------------------ */
@@ -314,9 +318,14 @@ import {
 
   function projectCardHTML(project) {
     const stageColorVar = `var(--c-${project.stage})`;
+    const thumbSrc = project.gallery[0] || '';
+    const thumbInner = isImageUrl(thumbSrc)
+      ? `<img src="${escapeHTML(thumbSrc)}" alt="${escapeHTML(project.title)} screenshot" loading="lazy">`
+      : escapeHTML(thumbSrc || project.title);
+    const thumbClass = isImageUrl(thumbSrc) ? 'project-thumb has-image' : 'project-thumb';
     return `
       <button type="button" class="project-card" style="--card-accent:${stageColorVar}" data-project-id="${project.id}">
-        <div class="project-thumb">${escapeHTML(project.gallery[0] || project.title)}</div>
+        <div class="${thumbClass}">${thumbInner}</div>
         <div class="project-body">
           <span class="project-tag">${escapeHTML(project.stage)}</span>
           <h3 class="project-title">${escapeHTML(project.title)}</h3>
@@ -433,9 +442,14 @@ import {
     state.lastFocusedBeforeModal = triggerEl || document.activeElement;
 
     // Gallery
-    gallery.innerHTML = (project.gallery || [])
-      .map((caption) => `<div class="modal-gallery-img">${escapeHTML(caption)}</div>`)
-      .join('') || `<div class="modal-gallery-img">${escapeHTML(project.title)}</div>`;
+    const galleryItems = project.gallery && project.gallery.length ? project.gallery : [project.title];
+    gallery.innerHTML = galleryItems
+      .map((item) =>
+        isImageUrl(item)
+          ? `<div class="modal-gallery-img has-image"><img src="${escapeHTML(item)}" alt="${escapeHTML(project.title)} screenshot" loading="lazy"></div>`
+          : `<div class="modal-gallery-img">${escapeHTML(item)}</div>`
+      )
+      .join('');
 
     // Stage tag
     const stageColor = `var(--c-${project.stage})`;
@@ -700,32 +714,63 @@ import {
 
     // Optional convention: any element with data-profile-field="name"
     // (or "bio", "email", "github", "linkedin") gets its text content
-    // replaced with live profile data if present in the HTML.
-    const nameEls = $$('[data-profile-field="name"]');
-    nameEls.forEach((el) => { el.textContent = PROFILE.name; });
+    // replaced with live profile data if present in the HTML. Each
+    // field only overwrites the placeholder once real data exists —
+    // an empty/未filled Firestore field should never blank out the
+    // static fallback text.
+    if (PROFILE.name) {
+      const nameEls = $$('[data-profile-field="name"]');
+      nameEls.forEach((el) => { el.textContent = PROFILE.name; });
+    }
 
-    const bioEls = $$('[data-profile-field="bio"]');
-    bioEls.forEach((el) => { el.textContent = PROFILE.bio; });
+    if (PROFILE.bio) {
+      const bioEls = $$('[data-profile-field="bio"]');
+      bioEls.forEach((el) => { el.textContent = PROFILE.bio; });
+    }
 
-    const emailEls = $$('[data-profile-field="email"]');
-    emailEls.forEach((el) => {
-      el.textContent = PROFILE.contact.email;
-      if (el.tagName === 'A') el.href = `mailto:${PROFILE.contact.email}`;
-    });
+    const contact = PROFILE.contact || {};
 
-    const githubEls = $$('[data-profile-field="github"]');
-    githubEls.forEach((el) => {
-      if (el.tagName === 'A') el.href = PROFILE.contact.github;
-      const valueEl = el.querySelector('.contact-link-value');
-      if (valueEl) valueEl.textContent = PROFILE.contact.github.replace(/^https?:\/\//, '');
-    });
+    if (contact.email) {
+      const emailEls = $$('[data-profile-field="email"]');
+      emailEls.forEach((el) => {
+        el.textContent = contact.email;
+        if (el.tagName === 'A') el.href = `mailto:${contact.email}`;
+      });
+    }
 
-    const linkedinEls = $$('[data-profile-field="linkedin"]');
-    linkedinEls.forEach((el) => {
-      if (el.tagName === 'A') el.href = PROFILE.contact.linkedin;
-      const valueEl = el.querySelector('.contact-link-value');
-      if (valueEl) valueEl.textContent = PROFILE.contact.linkedin.replace(/^https?:\/\//, '');
-    });
+    if (contact.github) {
+      const githubEls = $$('[data-profile-field="github"]');
+      githubEls.forEach((el) => {
+        if (el.tagName === 'A') el.href = contact.github;
+        const valueEl = el.querySelector('.contact-link-value');
+        if (valueEl) valueEl.textContent = contact.github.replace(/^https?:\/\//, '');
+      });
+    }
+
+    if (contact.linkedin) {
+      const linkedinEls = $$('[data-profile-field="linkedin"]');
+      linkedinEls.forEach((el) => {
+        if (el.tagName === 'A') el.href = contact.linkedin;
+        const valueEl = el.querySelector('.contact-link-value');
+        if (valueEl) valueEl.textContent = contact.linkedin.replace(/^https?:\/\//, '');
+      });
+    }
+
+    // Profile photo: swap the placeholder initial for the real image
+    // once a photoUrl exists. Previously there was no code path at all
+    // that read PROFILE.photoUrl, so an uploaded photo never appeared
+    // on the public site no matter what was saved in the admin panel.
+    if (PROFILE.photoUrl) {
+      const photoImg = document.getElementById('aboutAvatarPhoto');
+      const initialEl = document.getElementById('aboutAvatarInitial');
+      const captionEl = document.getElementById('aboutAvatarCaption');
+      if (photoImg) {
+        photoImg.src = PROFILE.photoUrl;
+        photoImg.style.display = 'block';
+      }
+      if (initialEl) initialEl.style.display = 'none';
+      if (captionEl) captionEl.style.display = 'none';
+    }
   }
 
   /* ------------------------------------------------------------------ */
