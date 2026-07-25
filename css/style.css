@@ -858,6 +858,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
   width:100%;
   max-height:88vh;
   overflow-y:auto;
+  overflow-x:hidden;
   position:relative;
   animation:modalIn var(--dur) var(--ease);
 }
@@ -884,10 +885,10 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
 .modal-gallery-wrap{
   position:relative;
   background:var(--bg-alt);
+  overflow:hidden;
 }
 .modal-gallery{
   display:flex;
-  overflow:hidden;
   transition:transform var(--dur) var(--ease);
 }
 .modal-gallery-img{
