@@ -1,289 +1,59 @@
 /* ==========================================================================
-   FIREBASE DATA LAYER
+   FIREBASE CONFIG — EDIT ME
    ==========================================================================
 
-   This module is the ONLY place that talks to Firestore. It fetches:
-     - profile      (single doc)
-     - projects     (collection)
-     - skills       (collection)
-     - experience   (collection, rendered as a commit log)
-     - blogPosts    (collection, rendered as stdout.log)
+   This file holds the connection settings for YOUR Firebase project.
+   It uses the Firebase v9+ modular SDK, loaded directly from a CDN
+   (no npm, no build step) so it runs as-is on GitHub Pages.
 
-   Design goal: script.js should never crash, even before any content
-   has been added. Every exported getter below ALWAYS resolves — either
-   with real Firestore data, or with an empty result ([] for
-   collections, an empty profile object for the profile) — and never
-   rejects. Callers don't need try/catch. There is no dummy/placeholder
-   content anywhere in this file; every field visitors see comes from
-   Firestore.
+   --------------------------------------------------------------------------
+   HOW TO GET YOUR OWN VALUES
+   --------------------------------------------------------------------------
+   1. Go to https://console.firebase.google.com/ and create a project
+      (or open an existing one).
+   2. In the left sidebar, click the gear icon → "Project settings".
+   3. Scroll down to the "Your apps" section.
+   4. Click the "</>" (Web) icon to register a new web app
+      (nickname can be anything, e.g. "portfolio-site").
+      You do NOT need to enable Firebase Hosting — you're using GitHub Pages.
+   5. Firebase will show you a `firebaseConfig` object exactly like the
+      shape below. Copy each value into the matching field here.
+   6. Enable Firestore: left sidebar → "Build" → "Firestore Database" →
+      "Create database" → start in production mode (we provide our own
+      security rules in firestore.rules) → pick a location close to you.
 
-   Uses the Firebase v9+ modular SDK via CDN imports (no npm, no bundler),
-   so this runs as-is on GitHub Pages.
+   --------------------------------------------------------------------------
+   IS IT SAFE TO COMMIT THIS FILE (WITH REAL VALUES) TO A PUBLIC REPO?
+   --------------------------------------------------------------------------
+   Yes. These values identify your Firebase project publicly — they are
+   not secret credentials. Real security comes from Firestore Security
+   Rules (see firestore.rules) and from restricting this API key to your
+   domain (see SECURITY.md). Read SECURITY.md before deploying.
    ========================================================================== */
 
-import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
-
-/* ------------------------------------------------------------------ */
-/* 1. FIRESTORE COLLECTION SCHEMA (for reference)                      */
-/* ------------------------------------------------------------------ */
-/*
-  profile (collection "profile", single doc — any doc ID, we just read
-           the first one; recommended doc ID: "main")
-    - name: string
-    - bio: string
-    - photoUrl: string
-    - contact: { email, github, linkedin } (map)
-
-  projects (collection "projects")
-    - title: string
-    - shortDescription: string
-    - fullDescription: string
-    - tags: array<string>          // e.g. ["scrape","automate"] — first tag
-                                    // used as the "stage" for pipeline filter
-    - techStack: array<string>
-    - images: array<string>        // URLs or short captions
-    - githubUrl: string
-    - liveUrl: string
-    - downloadUrl: string
-    - featured: boolean
-    - order: number (optional, for sorting)
-
-  skills (collection "skills")
-    - group: string                // "Scrape" | "Analyze" | "Automate" | "ML" | "Ship"
-    - stage: string                // "scrape" | "analyze" | "automate" | "ml" | "ship"
-    - color: string                // hex color, e.g. "#00E5FF"
-    - tags: array<string>
-    - order: number (optional)
-
-  experience (collection "experience") — rendered as a git commit log
-    - hash: string
-    - date: string
-    - title: string
-    - role: string
-    - desc: string
-    - branch: string
-    - stage: string                // used to pick the accent color
-    - order: number (optional)
-
-  blogPosts (collection "blogPosts") — rendered as stdout.log
-    - timestamp: string
-    - level: string                // "INFO" | "OK"
-    - title: string
-    - desc: string
-    - order: number (optional)
-*/
-
-/* ------------------------------------------------------------------ */
-/* 2. EMPTY DEFAULTS                                                   */
-/* ------------------------------------------------------------------ */
-/* No dummy/placeholder content ships with this site anymore. Every
-   getter below returns real Firestore data only. If a collection has
-   no documents yet (or Firestore isn't reachable), the getter simply
-   returns an empty result — script.js renders an "empty state" for
-   that section instead of any built-in dummy content. */
-
-const EMPTY_PROFILE = {
-  name: '',
-  bio: '',
-  photoUrl: '',
-  contact: {
-    email: '',
-    github: '',
-    linkedin: '',
-  },
+// Replace every value below with the values from your Firebase Console.
+// Keep the keys (left side) exactly as they are — only change the
+// placeholder strings on the right side.
+export const firebaseConfig = {
+  apiKey: 'AIzaSyBzKkofFdJyfPP0jI-ZYHxJvn5fYQO_5lU',
+  authDomain: 'my-portfolio-2ead0.firebaseapp.com',
+  projectId: 'my-portfolio-2ead0',
+  storageBucket: 'my-portfolio-2ead0.firebasestorage.app',
+  messagingSenderId: '720921956124',
+  appId: '1:720921956124:web:37377bf8cf2204ef9434d9',
 };
 
-/* ------------------------------------------------------------------ */
-/* 3. FIREBASE APP / FIRESTORE INITIALIZATION (lazy, safe)             */
-/* ------------------------------------------------------------------ */
-
-let firestoreDbPromise = null;
-
-/**
- * Lazily loads the Firebase SDK from CDN and initializes Firestore.
- * Returns null (never throws) if config isn't filled in or the SDK/
- * network fails to load, so callers can fall back to static data.
- */
-function getFirestoreDb() {
-  if (firestoreDbPromise) return firestoreDbPromise;
-
-  firestoreDbPromise = (async () => {
-    if (!isFirebaseConfigured()) {
-      // Config still has placeholder values — don't even try to load
-      // the SDK. This is the expected state until the user sets up
-      // their own Firebase project.
-      return null;
-    }
-
-    try {
-      const [{ initializeApp }, firestoreModule] = await Promise.all([
-        import('https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'),
-        import('https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js'),
-      ]);
-
-      const app = initializeApp(firebaseConfig);
-      const db = firestoreModule.getFirestore(app);
-      return { db, firestoreModule };
-    } catch (err) {
-      console.warn('[firebase-data] Could not initialize Firebase — falling back to static content.', err);
-      return null;
-    }
-  })();
-
-  return firestoreDbPromise;
-}
-
-/**
- * Generic collection fetch helper. Always resolves — returns `null`
- * on any failure (never throws) so callers can fall back cleanly.
- */
-async function fetchCollectionSafe(collectionName, orderField) {
-  const ctx = await getFirestoreDb();
-  if (!ctx) return null;
-
-  try {
-    const { db, firestoreModule } = ctx;
-    const { collection, getDocs, getDocsFromServer, query, orderBy } = firestoreModule;
-    // getDocsFromServer forces a real network read from Firestore and
-    // skips its local IndexedDB/memory cache, so admin-panel edits show
-    // up immediately for visitors instead of a stale cached snapshot.
-    const fetchDocs = getDocsFromServer || getDocs;
-
-    const colRef = collection(db, collectionName);
-    const q = orderField ? query(colRef, orderBy(orderField)) : colRef;
-    const snapshot = await fetchDocs(q);
-
-    if (snapshot.empty) return null; // treat "no documents yet" as "use fallback"
-
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  } catch (err) {
-    console.warn(`[firebase-data] Failed to fetch "${collectionName}" — falling back to static content.`, err);
-    return null;
-  }
-}
-
-/**
- * Fetches the single "profile" document. Always resolves — returns
- * `null` on any failure so the caller falls back cleanly.
- */
-async function fetchProfileSafe() {
-  const ctx = await getFirestoreDb();
-  if (!ctx) return null;
-
-  try {
-    const { db, firestoreModule } = ctx;
-    const { collection, getDocs, getDocsFromServer, limit, query } = firestoreModule;
-    const fetchDocs = getDocsFromServer || getDocs;
-
-    const colRef = collection(db, 'profile');
-    const snapshot = await fetchDocs(query(colRef, limit(1)));
-    if (snapshot.empty) return null;
-
-    return snapshot.docs[0].data();
-  } catch (err) {
-    console.warn('[firebase-data] Failed to fetch "profile" — falling back to static content.', err);
-    return null;
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/* 4. NORMALIZERS — map raw Firestore docs into the shape script.js    */
-/*    already expects (same field names the static arrays used)       */
-/* ------------------------------------------------------------------ */
-
-function normalizeProject(doc) {
-  const tags = Array.isArray(doc.tags) && doc.tags.length ? doc.tags : ['scrape'];
-  return {
-    id: doc.id,
-    title: doc.title || 'Untitled project',
-    shortDesc: doc.shortDescription || '',
-    fullDesc: doc.fullDescription || doc.shortDescription || '',
-    tags,
-    // kept for any old code path that still expects a single "stage" —
-    // new rendering code in script.js uses the full `tags` array instead.
-    stage: tags[0],
-    tech: Array.isArray(doc.techStack) ? doc.techStack : [],
-    github: doc.githubUrl || '',
-    live: doc.liveUrl || '',
-    download: doc.downloadUrl || '',
-    featured: Boolean(doc.featured),
-    gallery: Array.isArray(doc.images) ? doc.images : [],
-  };
-}
-
-function normalizeSkillGroup(doc) {
-  return {
-    group: doc.group || 'Misc',
-    stage: doc.stage || 'scrape',
-    color: doc.color || '#00E5FF',
-    tags: Array.isArray(doc.tags) ? doc.tags : [],
-  };
-}
-
-function normalizeExperience(doc) {
-  return {
-    hash: doc.hash || '0000000',
-    date: doc.date || '',
-    title: doc.title || '',
-    role: doc.role || '',
-    desc: doc.desc || '',
-    branch: doc.branch || 'main',
-    stage: doc.stage || 'automate',
-  };
-}
-
-function normalizeBlogPost(doc) {
-  return {
-    timestamp: doc.timestamp || '',
-    level: doc.level || 'INFO',
-    title: doc.title || '',
-    desc: doc.desc || '',
-  };
-}
-
-function normalizeProfile(doc) {
-  return {
-    name: doc.name || '',
-    bio: doc.bio || '',
-    photoUrl: doc.photoUrl || '',
-    contact: {
-      email: (doc.contact && doc.contact.email) || '',
-      github: (doc.contact && doc.contact.github) || '',
-      linkedin: (doc.contact && doc.contact.linkedin) || '',
-    },
-  };
-}
-
-/* ------------------------------------------------------------------ */
-/* 5. PUBLIC GETTERS — used by script.js                               */
-/* ------------------------------------------------------------------ */
-
-export async function getProjects() {
-  const docs = await fetchCollectionSafe('projects', 'order');
-  if (!docs) return [];
-  return docs.map(normalizeProject);
-}
-
-export async function getSkills() {
-  const docs = await fetchCollectionSafe('skills', 'order');
-  if (!docs) return [];
-  return docs.map(normalizeSkillGroup);
-}
-
-export async function getExperience() {
-  const docs = await fetchCollectionSafe('experience', 'order');
-  if (!docs) return [];
-  return docs.map(normalizeExperience);
-}
-
-export async function getBlogPosts() {
-  const docs = await fetchCollectionSafe('blogPosts', 'order');
-  if (!docs) return [];
-  return docs.map(normalizeBlogPost);
-}
-
-export async function getProfile() {
-  const doc = await fetchProfileSafe();
-  if (!doc) return EMPTY_PROFILE;
-  return normalizeProfile(doc);
+/* --------------------------------------------------------------------------
+   HAS THE CONFIG BEEN FILLED IN YET?
+   --------------------------------------------------------------------------
+   firebase-data.js checks this before attempting to talk to Firestore.
+   While any placeholder value is still present, the site will skip
+   Firestore entirely and use the built-in static/dummy content instead —
+   so the site never crashes or shows a blank page while you're setting
+   things up.
+   ========================================================================== */
+export function isFirebaseConfigured() {
+  return Object.values(firebaseConfig).every(
+    (value) => typeof value === 'string' && !value.startsWith('YOUR_')
+  );
 }
