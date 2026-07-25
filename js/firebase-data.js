@@ -49,8 +49,8 @@ import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
     - order: number (optional, for sorting)
 
   skills (collection "skills")
-    - group: string                // "Scrape" | "Analyze" | "Automate" | "Ship"
-    - stage: string                // "scrape" | "analyze" | "automate" | "ship"
+    - group: string                // "Scrape" | "Analyze" | "Automate" | "ML" | "Ship"
+    - stage: string                // "scrape" | "analyze" | "automate" | "ml" | "ship"
     - color: string                // hex color, e.g. "#00E5FF"
     - tags: array<string>
     - order: number (optional)

@@ -88,6 +88,7 @@ import {
     scrape: 'showing scrape',
     analyze: 'showing analyze',
     automate: 'showing automate',
+    ml: 'showing ml',
     ship: 'showing ship',
   };
 
@@ -96,7 +97,7 @@ import {
   /* ------------------------------------------------------------------ */
 
   const state = {
-    activeFilter: 'all', // 'all' | 'scrape' | 'analyze' | 'automate' | 'ship'
+    activeFilter: 'all', // 'all' | 'scrape' | 'analyze' | 'automate' | 'ml' | 'ship'
     fullGridRendered: false,
     lastFocusedBeforeModal: null,
   };
@@ -588,7 +589,7 @@ import {
   /** Maps a stage keyword (from Firestore or fallback data) to the same
       CSS custom property the rest of the site uses for stage accents. */
   function stageToColorVar(stage) {
-    const known = ['scrape', 'analyze', 'automate', 'ship'];
+    const known = ['scrape', 'analyze', 'automate', 'ml', 'ship'];
     const safeStage = known.includes(stage) ? stage : 'automate';
     return `var(--c-${safeStage})`;
   }

@@ -465,7 +465,7 @@ async function renderProfileTab(content) {
 /* 6. PROJECTS TAB (has extra fields: tags, tech, gallery, toggle)      */
 /* ------------------------------------------------------------------ */
 
-const PROJECT_TAG_OPTIONS = ['scrape', 'analyze', 'automate', 'ship'];
+const PROJECT_TAG_OPTIONS = ['scrape', 'analyze', 'automate', 'ml', 'ship'];
 
 async function renderProjectsTab(content) {
   const result = await listProjects();
@@ -668,15 +668,16 @@ async function renderProjectsTab(content) {
 /* 7. SKILLS / EXPERIENCE / BLOG — shared simple list+form pattern      */
 /* ------------------------------------------------------------------ */
 
-// Fixed pipeline stages — must match the four stage colors defined in
-// css/style.css (--c-scrape, --c-analyze, --c-automate, --c-ship). Kept
-// as one source of truth so every "stage" / "group name" / "accent
-// color" field in the admin panel is a dropdown over these four,
+// Fixed pipeline stages — must match the five stage colors defined in
+// css/style.css (--c-scrape, --c-analyze, --c-automate, --c-ml, --c-ship).
+// Kept as one source of truth so every "stage" / "group name" / "accent
+// color" field in the admin panel is a dropdown over these five,
 // instead of free text that could drift from the site theme.
 const PIPELINE_STAGES = [
   { value: 'scrape', label: 'Scrape', color: '#00E5FF' },
   { value: 'analyze', label: 'Analyze', color: '#FF3EA5' },
   { value: 'automate', label: 'Automate', color: '#FFB020' },
+  { value: 'ml', label: 'ML', color: '#00D084' },
   { value: 'ship', label: 'Ship', color: '#7B5CFF' },
 ];
 
@@ -792,7 +793,7 @@ async function renderSimpleCollectionTab(content, config) {
       } else if (f.type === 'list') {
         input = el('input', { type: 'text', placeholder: f.placeholder || '', value: (item[f.key] || []).join(', ') });
       } else if (f.type === 'stage-select') {
-        // Fixed dropdown over the four pipeline stages — keeps this value
+        // Fixed dropdown over the five pipeline stages — keeps this value
         // locked to what the site theme actually supports.
         const current = (item[f.key] || '').toLowerCase();
         input = el('select', {}, PIPELINE_STAGES.map((s) =>
@@ -800,7 +801,7 @@ async function renderSimpleCollectionTab(content, config) {
         ));
       } else if (f.type === 'stage-color') {
         // Accent color is derived from the stage, not typed in — always
-        // matches --c-scrape / --c-analyze / --c-automate / --c-ship.
+        // matches --c-scrape / --c-analyze / --c-automate / --c-ml / --c-ship.
         const current = (item[f.key] || '').toUpperCase();
         const matchIdx = PIPELINE_STAGES.findIndex((s) => s.color.toUpperCase() === current);
         input = el('select', {}, PIPELINE_STAGES.map((s, i) =>

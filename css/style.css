@@ -21,6 +21,7 @@
   --c-analyze:#FF3EA5;
   --c-automate:#FFB020;
   --c-ship:#7B5CFF;
+  --c-ml:#00D084;
 
   /* Fonts */
   --font-head:'Space Grotesk', sans-serif;
@@ -54,6 +55,7 @@
   --c-analyze:#C22E77;
   --c-automate:#B5760A;
   --c-ship:#5B3FCF;
+  --c-ml:#0A8F5B;
 }
 
 /* ---------------------------------------------------------------------- */
