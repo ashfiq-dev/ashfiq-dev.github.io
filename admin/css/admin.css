@@ -193,6 +193,74 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* -------------------------------------------------------------------- */
+/* Rich text editor (used for the project "Full description" field)     */
+/* -------------------------------------------------------------------- */
+/* Lightweight contenteditable + toolbar, no dependencies. Produces a
+   small, safe subset of HTML (bold/italic/color/size + line breaks)
+   which js/script.js sanitizes down to the same subset before ever
+   rendering it on the public site. */
+
+.richtext-field {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-alt);
+}
+
+.richtext-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  flex-wrap: wrap;
+}
+
+.rt-btn {
+  padding: 6px 10px;
+  font-size: .8rem;
+  line-height: 1;
+  width: auto;
+}
+
+.rt-btn.rt-italic { font-style: italic; }
+.rt-btn.rt-underline { text-decoration: underline; }
+
+select.rt-size {
+  width: auto;
+  padding: 6px 8px;
+  font-size: .78rem;
+}
+
+input.rt-color {
+  width: 36px;
+  height: 32px;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.richtext-editor {
+  min-height: 140px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  font-size: .9rem;
+  line-height: 1.6;
+  color: var(--text);
+  outline: none;
+}
+
+.richtext-editor p, .richtext-editor div { margin: 0 0 .8em; }
+.richtext-editor h3 { font-size: 1.05rem; margin: 0 0 .5em; }
+.richtext-editor ul, .richtext-editor ol { margin: 0 0 .8em 1.3em; }
+.richtext-editor a { color: var(--c-scrape); }
+.richtext-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-dim);
+}
+
+/* -------------------------------------------------------------------- */
 /* Buttons                                                               */
 /* -------------------------------------------------------------------- */
 

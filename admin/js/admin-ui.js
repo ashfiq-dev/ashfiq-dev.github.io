@@ -462,7 +462,151 @@ async function renderProfileTab(content) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 6. PROJECTS TAB (has extra fields: tags, tech, gallery, toggle)      */
+/* 6. RICH TEXT EDITOR — used for the project "Full description" field */
+/* ------------------------------------------------------------------ */
+/* A small contenteditable + toolbar, no dependencies. Supports bold,
+   italic, underline, headings, bullet/numbered lists, text color, font
+   size, and links — matching the safe subset of HTML that
+   js/script.js knows how to sanitize and render on the public site. */
+
+/** Converts a stored value into HTML safe to drop into the editor.
+    Old projects saved "Full description" as plain text (via a plain
+    <textarea>, with real newlines) before this editor existed — those
+    still need to show up with their line breaks intact instead of as
+    one run-on paragraph. Anything that already looks like HTML (i.e.
+    was saved by this editor) is used as-is. */
+function plainTextOrHTMLToEditableHTML(value) {
+  if (!value) return '';
+  const looksLikeHTML = /<[a-z][\s\S]*>/i.test(value);
+  if (looksLikeHTML) return value;
+  const div = document.createElement('div');
+  div.textContent = value; // escapes safely
+  return div.innerHTML.replace(/\n/g, '<br>');
+}
+
+function createRichTextEditor(initialValue, placeholder) {
+  const editor = el('div', {
+    class: 'richtext-editor',
+    contenteditable: 'true',
+    'data-placeholder': placeholder || '',
+  });
+  editor.innerHTML = plainTextOrHTMLToEditableHTML(initialValue);
+
+  function exec(command, value) {
+    editor.focus();
+    document.execCommand(command, false, value || null);
+  }
+
+  // Bold/italic/underline/lists/headings/links/undo/redo use execCommand
+  // (simple, no deps, fine for this small trusted admin tool) — these
+  // are all structural commands the browser already handles well.
+  // Color/size wrap the current selection in a <span style="..."> by
+  // hand instead, since execCommand's font-size command only supports
+  // the old 1-7 legacy scale.
+  function wrapSelectionWithStyle(styleText) {
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return;
+
+    const span = document.createElement('span');
+    span.setAttribute('style', styleText);
+    span.appendChild(range.extractContents());
+    range.insertNode(span);
+
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+  }
+
+  function insertLink() {
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || sel.isCollapsed) {
+      showToast('Select some text first, then click Link.', true);
+      return;
+    }
+    const url = prompt('Link URL (https://…):', 'https://');
+    if (!url) return;
+    exec('createLink', url.trim());
+  }
+
+  const boldBtn = el('button', { type: 'button', class: 'rt-btn', title: 'Bold', onclick: () => exec('bold') }, 'B');
+  const italicBtn = el('button', { type: 'button', class: 'rt-btn rt-italic', title: 'Italic', onclick: () => exec('italic') }, 'I');
+  const underlineBtn = el('button', { type: 'button', class: 'rt-btn rt-underline', title: 'Underline', onclick: () => exec('underline') }, 'U');
+
+  const formatSelect = el('select', {
+    class: 'rt-size',
+    title: 'Paragraph style',
+    onchange: (e) => {
+      const value = e.target.value;
+      e.target.value = '';
+      if (value) exec('formatBlock', value);
+    },
+  }, [
+    el('option', { value: '' }, 'Style'),
+    el('option', { value: '<p>' }, 'Normal text'),
+    el('option', { value: '<h3>' }, 'Heading'),
+  ]);
+
+  const bulletBtn = el('button', { type: 'button', class: 'rt-btn', title: 'Bullet list', onclick: () => exec('insertUnorderedList') }, '\u2022 List');
+  const numberBtn = el('button', { type: 'button', class: 'rt-btn', title: 'Numbered list', onclick: () => exec('insertOrderedList') }, '1. List');
+
+  const sizeSelect = el('select', {
+    class: 'rt-size',
+    title: 'Font size',
+    onchange: (e) => {
+      const value = e.target.value;
+      e.target.value = '';
+      if (value) wrapSelectionWithStyle(`font-size:${value}`);
+    },
+  }, [
+    el('option', { value: '' }, 'Size'),
+    el('option', { value: '13px' }, 'Small'),
+    el('option', { value: '16px' }, 'Normal'),
+    el('option', { value: '20px' }, 'Large'),
+    el('option', { value: '26px' }, 'X-Large'),
+  ]);
+
+  const colorInput = el('input', {
+    type: 'color',
+    class: 'rt-color',
+    title: 'Text color',
+    value: '#e7eaf2',
+    onchange: (e) => wrapSelectionWithStyle(`color:${e.target.value}`),
+  });
+
+  const linkBtn = el('button', { type: 'button', class: 'rt-btn', title: 'Insert link (select text first)', onclick: insertLink }, 'Link');
+  const unlinkBtn = el('button', { type: 'button', class: 'rt-btn', title: 'Remove link', onclick: () => exec('unlink') }, 'Unlink');
+
+  const undoBtn = el('button', { type: 'button', class: 'rt-btn', title: 'Undo', onclick: () => exec('undo') }, '\u21b6');
+  const redoBtn = el('button', { type: 'button', class: 'rt-btn', title: 'Redo', onclick: () => exec('redo') }, '\u21b7');
+
+  const clearBtn = el('button', {
+    type: 'button', class: 'rt-btn', title: 'Clear formatting',
+    onclick: () => exec('removeFormat'),
+  }, 'Clear');
+
+  const toolbar = el('div', { class: 'richtext-toolbar' }, [
+    boldBtn, italicBtn, underlineBtn,
+    formatSelect,
+    bulletBtn, numberBtn,
+    sizeSelect, colorInput,
+    linkBtn, unlinkBtn,
+    undoBtn, redoBtn,
+    clearBtn,
+  ]);
+
+  return {
+    wrapper: el('div', { class: 'richtext-field' }, [toolbar, editor]),
+    getHTML: () => editor.innerHTML.trim(),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* 7. PROJECTS TAB                                                      */
 /* ------------------------------------------------------------------ */
 
 const PROJECT_TAG_OPTIONS = ['scrape', 'analyze', 'automate', 'ml', 'ship'];
@@ -531,7 +675,7 @@ async function renderProjectsTab(content) {
 
     const titleInput = el('input', { type: 'text', value: item.title || '' });
     const shortInput = el('textarea', { rows: 2 }, item.shortDescription || '');
-    const fullInput = el('textarea', { rows: 5 }, item.fullDescription || '');
+    const fullDescEditor = createRichTextEditor(item.fullDescription || '', 'Full project description\u2026');
     const techInput = el('input', { type: 'text', value: (item.techStack || []).join(', ') });
     const githubInput = el('input', { type: 'url', value: item.githubUrl || '' });
     const liveInput = el('input', { type: 'url', value: item.liveUrl || '' });
@@ -599,7 +743,7 @@ async function renderProjectsTab(content) {
         const fields = {
           title,
           shortDescription: shortInput.value.trim(),
-          fullDescription: fullInput.value.trim(),
+          fullDescription: fullDescEditor.getHTML(),
           tags: tagPills.filter((p) => p._checkbox.checked).map((p) => p._checkbox.value),
           techStack: techInput.value.split(',').map((t) => t.trim()).filter(Boolean),
           images: galleryUrls,
@@ -626,7 +770,11 @@ async function renderProjectsTab(content) {
         el('h2', { class: 'panel-title' }, isEdit ? 'Edit project' : 'Add a project'),
         el('div', { class: 'field' }, [el('label', {}, 'Title'), titleInput]),
         el('div', { class: 'field' }, [el('label', {}, 'Short description'), shortInput]),
-        el('div', { class: 'field' }, [el('label', {}, 'Full description'), fullInput]),
+        el('div', { class: 'field' }, [
+          el('label', {}, 'Full description'),
+          fullDescEditor.wrapper,
+          el('p', { class: 'field-hint' }, 'Select text to format it (bold/italic/underline/color/size/link), or use the style dropdown for headings and the list buttons for bullet/numbered lists.'),
+        ]),
         el('div', { class: 'field' }, [
           el('label', {}, 'Tags'),
           el('div', { class: 'checkbox-row' }, tagPills),
@@ -665,7 +813,7 @@ async function renderProjectsTab(content) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 7. SKILLS / EXPERIENCE / BLOG — shared simple list+form pattern      */
+/* 8. SKILLS / EXPERIENCE / BLOG — shared simple list+form pattern      */
 /* ------------------------------------------------------------------ */
 
 // Fixed pipeline stages — must match the five stage colors defined in
@@ -868,7 +1016,7 @@ async function renderSimpleCollectionTab(content, config) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 8. BOOT — the only place that decides login vs. dashboard            */
+/* 9. BOOT — the only place that decides login vs. dashboard            */
 /* ------------------------------------------------------------------ */
 
 export async function boot() {

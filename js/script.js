@@ -68,6 +68,77 @@ import {
       fallback data's plain-text captions like "Dashboard showing…". */
   const isImageUrl = (str = '') => /^https?:\/\//.test(str);
 
+  /* -- Project "full description" rendering ---------------------------
+     The admin panel's rich-text editor saves this field as a small
+     subset of HTML (bold/italic/color/font-size + line breaks).
+     Projects created before that editor existed have it saved as plain
+     text with real newline characters instead — those need converting
+     so their line breaks still show up (plain textContent collapses
+     them). Either way, everything is sanitized down to a known-safe
+     tag/attribute allowlist right before it's ever put in the DOM. */
+
+  const RICHTEXT_ALLOWED_TAGS = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'SPAN', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'H3', 'A']);
+  const RICHTEXT_ALLOWED_STYLE_PROPS = new Set(['color', 'font-size', 'font-weight', 'font-style']);
+  const RICHTEXT_SAFE_LINK_PROTOCOL = /^(https?:|mailto:)/i;
+
+  function sanitizeRichText(html) {
+    const template = document.createElement('template');
+    template.innerHTML = html;
+
+    const clean = (node) => {
+      Array.from(node.childNodes).forEach((child) => {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          // Sanitize descendants FIRST. Otherwise unwrapping a disallowed
+          // tag (e.g. <a>) could smuggle out an unsanitized nested
+          // element (e.g. <img onerror=...>) that this same pass would
+          // never revisit.
+          clean(child);
+
+          if (!RICHTEXT_ALLOWED_TAGS.has(child.tagName)) {
+            while (child.firstChild) node.insertBefore(child.firstChild, child);
+            node.removeChild(child);
+            return;
+          }
+
+          Array.from(child.attributes).forEach((attr) => {
+            if (child.tagName === 'A' && attr.name === 'href') {
+              if (!RICHTEXT_SAFE_LINK_PROTOCOL.test(attr.value.trim())) child.removeAttribute('href');
+              return;
+            }
+            if (attr.name !== 'style') {
+              child.removeAttribute(attr.name);
+              return;
+            }
+            const kept = child.style.cssText
+              .split(';')
+              .map((rule) => rule.trim())
+              .filter(Boolean)
+              .filter((rule) => RICHTEXT_ALLOWED_STYLE_PROPS.has(rule.split(':')[0].trim().toLowerCase()))
+              .join('; ');
+            if (kept) child.setAttribute('style', kept);
+            else child.removeAttribute('style');
+          });
+          if (child.tagName === 'A' && child.hasAttribute('href')) {
+            child.setAttribute('target', '_blank');
+            child.setAttribute('rel', 'noopener noreferrer');
+          }
+        } else if (child.nodeType !== Node.TEXT_NODE) {
+          node.removeChild(child); // comments, etc.
+        }
+      });
+    };
+
+    clean(template.content);
+    return template.innerHTML;
+  }
+
+  function descriptionToSafeHTML(value = '') {
+    if (!value) return '';
+    const looksLikeHTML = /<[a-z][\s\S]*>/i.test(value);
+    if (!looksLikeHTML) return escapeHTML(value).replace(/\n/g, '<br>');
+    return sanitizeRichText(value);
+  }
+
   /* ------------------------------------------------------------------ */
   /* 2. DATA — fetched live from Firestore, no dummy content             */
   /* ------------------------------------------------------------------ */
@@ -646,7 +717,7 @@ import {
 
     // Title + description
     title.textContent = project.title;
-    desc.textContent = project.fullDesc || project.shortDesc;
+    desc.innerHTML = descriptionToSafeHTML(project.fullDesc || project.shortDesc);
 
     // Tech badges
     tech.innerHTML = (project.tech || [])

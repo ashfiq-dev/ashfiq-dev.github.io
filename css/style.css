@@ -1013,6 +1013,12 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
 .modal-stage-tag.multi::before{ content:"\2726  "; }
 .modal-title{ font-size:1.5rem; margin-bottom:14px; }
 .modal-desc{ color:var(--text-muted); line-height:1.7; margin-bottom:20px; }
+.modal-desc p, .modal-desc div{ margin:0 0 1em; }
+.modal-desc p:last-child, .modal-desc div:last-child{ margin-bottom:0; }
+.modal-desc h3{ color:var(--text); font-size:1.05rem; margin:0 0 .5em; }
+.modal-desc ul, .modal-desc ol{ margin:0 0 1em 1.3em; }
+.modal-desc a{ color:var(--c-scrape); text-decoration:underline; text-underline-offset:2px; }
+.modal-desc a:hover{ color:var(--c-ship); }
 .modal-tech{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:26px; }
 .tech-badge{
   font-family:var(--font-mono);
