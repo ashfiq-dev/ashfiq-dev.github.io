@@ -365,8 +365,15 @@ import {
   /* 8. PROJECTS RENDERING + FILTERING                                   */
   /* ------------------------------------------------------------------ */
 
+  /** Capitalizes a tag for display, e.g. "ml" -> "ML", "scrape" -> "Scrape". */
+  const displayTag = (tag) => (tag === 'ml' ? 'ML' : tag.charAt(0).toUpperCase() + tag.slice(1));
+
   function projectCardHTML(project) {
-    const stageColorVar = `var(--c-${project.stage})`;
+    const tags = (project.tags && project.tags.length ? project.tags : [project.stage || 'scrape']);
+    const isMulti = tags.length > 1;
+    const stageColorVar = isMulti ? 'var(--c-multi)' : `var(--c-${tags[0]})`;
+    const tagLabel = isMulti ? tags.map((t) => escapeHTML(displayTag(t))).join(' + ') : escapeHTML(tags[0]);
+    const tagClass = 'project-tag' + (isMulti ? ' multi' : '');
     const thumbSrc = project.gallery[0] || '';
     const thumbInner = isImageUrl(thumbSrc)
       ? `<img src="${escapeHTML(thumbSrc)}" alt="${escapeHTML(project.title)} screenshot" loading="lazy">`
@@ -376,7 +383,7 @@ import {
       <button type="button" class="project-card" style="--card-accent:${stageColorVar}" data-project-id="${project.id}">
         <div class="${thumbClass}">${thumbInner}</div>
         <div class="project-body">
-          <span class="project-tag">${escapeHTML(project.stage)}</span>
+          <span class="${tagClass}">${tagLabel}</span>
           <h3 class="project-title">${escapeHTML(project.title)}</h3>
           <p class="project-desc">${escapeHTML(project.shortDesc)}</p>
         </div>
@@ -412,7 +419,9 @@ import {
     // filtered set so the section never renders empty.
     const filteredAll = state.activeFilter === 'all'
       ? PROJECTS
-      : PROJECTS.filter((p) => p.stage === state.activeFilter);
+      : state.activeFilter === 'multi'
+        ? PROJECTS.filter((p) => (p.tags || []).length > 1)
+        : PROJECTS.filter((p) => (p.tags || []).includes(state.activeFilter));
 
     const featuredOnly = filteredAll.filter((p) => p.featured);
     const featuredSet = (featuredOnly.length > 0 ? featuredOnly : filteredAll).slice(0, 3);
@@ -627,8 +636,11 @@ import {
     renderGallerySlide();
 
     // Stage tag
-    const stageColor = `var(--c-${project.stage})`;
-    stageTag.textContent = project.stage;
+    const modalTags = (project.tags && project.tags.length ? project.tags : [project.stage || 'scrape']);
+    const modalIsMulti = modalTags.length > 1;
+    const stageColor = modalIsMulti ? 'var(--c-multi)' : `var(--c-${modalTags[0]})`;
+    stageTag.textContent = modalIsMulti ? modalTags.map(displayTag).join(' + ') : modalTags[0];
+    stageTag.classList.toggle('multi', modalIsMulti);
     stageTag.style.background = `color-mix(in srgb, ${stageColor} 18%, transparent)`;
     stageTag.style.color = stageColor;
 

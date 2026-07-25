@@ -22,8 +22,7 @@
   --c-automate:#FFB020;
   --c-ship:#7B5CFF;
   --c-ml:#00D084;
-
-  /* Fonts */
+  --c-multi:#FFD60A;
   --font-head:'Space Grotesk', sans-serif;
   --font-body:'Inter', sans-serif;
   --font-mono:'JetBrains Mono', monospace;
@@ -56,6 +55,7 @@
   --c-automate:#B5760A;
   --c-ship:#5B3FCF;
   --c-ml:#0A8F5B;
+  --c-multi:#B8860B;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -663,6 +663,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
   font-weight:700;
   border:1px solid color-mix(in srgb, var(--card-accent) 60%, transparent);
 }
+.project-tag.multi::before{ content:"\2726  "; }
 .project-title{ font-size:1.1rem; color:var(--text); }
 .project-desc{
   color:var(--text-muted);
@@ -966,7 +967,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
   display:flex;
   align-items:center;
   justify-content:center;
-  z-index:200;
+  z-index:1100;
   padding:40px;
 }
 .lightbox-overlay[hidden]{ display:none; }
@@ -1009,6 +1010,7 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
   font-weight:700;
   margin-bottom:12px;
 }
+.modal-stage-tag.multi::before{ content:"\2726  "; }
 .modal-title{ font-size:1.5rem; margin-bottom:14px; }
 .modal-desc{ color:var(--text-muted); line-height:1.7; margin-bottom:20px; }
 .modal-tech{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:26px; }
