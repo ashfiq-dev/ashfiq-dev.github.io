@@ -90,6 +90,7 @@ import {
     automate: 'showing automate',
     ml: 'showing ml',
     ship: 'showing ship',
+    multi: 'showing multi-stage',
   };
 
   /* ------------------------------------------------------------------ */
@@ -366,17 +367,23 @@ import {
   /* ------------------------------------------------------------------ */
 
   function projectCardHTML(project) {
-    const stageColorVar = `var(--c-${project.stage})`;
+    const tags = (project.tags && project.tags.length) ? project.tags : [project.stage];
+    const isMulti = tags.length > 1;
+    // Multi-tag projects get their own accent color (--c-multi) instead of
+    // any single stage color, so they read as their own thing in the grid.
+    const accentColorVar = isMulti ? 'var(--c-multi)' : `var(--c-${tags[0]})`;
+    const tagLabel = isMulti ? tags.join(' / ') : tags[0];
+    const tagClass = 'project-tag' + (isMulti ? ' multi' : '');
     const thumbSrc = project.gallery[0] || '';
     const thumbInner = isImageUrl(thumbSrc)
       ? `<img src="${escapeHTML(thumbSrc)}" alt="${escapeHTML(project.title)} screenshot" loading="lazy">`
       : escapeHTML(thumbSrc || project.title);
     const thumbClass = isImageUrl(thumbSrc) ? 'project-thumb has-image' : 'project-thumb';
     return `
-      <button type="button" class="project-card" style="--card-accent:${stageColorVar}" data-project-id="${project.id}">
+      <button type="button" class="project-card" style="--card-accent:${accentColorVar}" data-project-id="${project.id}">
         <div class="${thumbClass}">${thumbInner}</div>
         <div class="project-body">
-          <span class="project-tag">${escapeHTML(project.stage)}</span>
+          <span class="${tagClass}">${escapeHTML(tagLabel)}</span>
           <h3 class="project-title">${escapeHTML(project.title)}</h3>
           <p class="project-desc">${escapeHTML(project.shortDesc)}</p>
         </div>
@@ -412,7 +419,9 @@ import {
     // filtered set so the section never renders empty.
     const filteredAll = state.activeFilter === 'all'
       ? PROJECTS
-      : PROJECTS.filter((p) => p.stage === state.activeFilter);
+      : state.activeFilter === 'multi'
+        ? PROJECTS.filter((p) => ((p.tags && p.tags.length) ? p.tags : [p.stage]).length > 1)
+        : PROJECTS.filter((p) => ((p.tags && p.tags.length) ? p.tags : [p.stage]).includes(state.activeFilter));
 
     const featuredOnly = filteredAll.filter((p) => p.featured);
     const featuredSet = (featuredOnly.length > 0 ? featuredOnly : filteredAll).slice(0, 3);
@@ -626,11 +635,14 @@ import {
 
     renderGallerySlide();
 
-    // Stage tag
-    const stageColor = `var(--c-${project.stage})`;
-    stageTag.textContent = project.stage;
-    stageTag.style.background = `color-mix(in srgb, ${stageColor} 18%, transparent)`;
-    stageTag.style.color = stageColor;
+    // Stage tag(s)
+    const modalTags = (project.tags && project.tags.length) ? project.tags : [project.stage];
+    const modalIsMulti = modalTags.length > 1;
+    const modalStageColor = modalIsMulti ? 'var(--c-multi)' : `var(--c-${modalTags[0]})`;
+    stageTag.textContent = modalTags.join(' / ');
+    stageTag.classList.toggle('multi', modalIsMulti);
+    stageTag.style.background = `color-mix(in srgb, ${modalStageColor} 18%, transparent)`;
+    stageTag.style.color = modalStageColor;
 
     // Title + description
     title.textContent = project.title;

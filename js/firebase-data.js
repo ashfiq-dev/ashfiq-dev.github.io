@@ -38,8 +38,11 @@ import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
     - title: string
     - shortDescription: string
     - fullDescription: string
-    - tags: array<string>          // e.g. ["scrape","automate"] — first tag
-                                    // used as the "stage" for pipeline filter
+    - tags: array<string>          // e.g. ["scrape","automate"] — a project
+                                    // can belong to more than one stage; it
+                                    // matches every stage filter it's tagged
+                                    // with (first tag is still used as the
+                                    // single "primary" accent color)
     - techStack: array<string>
     - images: array<string>        // URLs or short captions
     - githubUrl: string
@@ -192,13 +195,19 @@ async function fetchProfileSafe() {
 /* ------------------------------------------------------------------ */
 
 function normalizeProject(doc) {
-  const tags = Array.isArray(doc.tags) ? doc.tags : [];
+  const rawTags = Array.isArray(doc.tags) ? doc.tags : [];
+  const tags = rawTags.length ? rawTags : ['scrape'];
   return {
     id: doc.id,
     title: doc.title || 'Untitled project',
     shortDesc: doc.shortDescription || '',
     fullDesc: doc.fullDescription || doc.shortDescription || '',
-    stage: tags[0] || 'scrape',
+    // `stage` stays as the primary (first) tag — used wherever a single
+    // accent color is needed. `tags` carries the full list so a project
+    // that spans multiple categories can be filtered/matched under all
+    // of them instead of only its first tag.
+    stage: tags[0],
+    tags,
     tech: Array.isArray(doc.techStack) ? doc.techStack : [],
     github: doc.githubUrl || '',
     live: doc.liveUrl || '',
