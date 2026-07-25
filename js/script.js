@@ -27,6 +27,7 @@
    9.  Project modal (gallery, focus trap)
    10. Git-log (experience) rendering
    11. stdout log (blog) rendering
+   11b. Reviews grid + "leave a review" form
    12. Contact form validation
    13. Profile (name / bio / contact links) rendering
    14. Skills grid rendering (Firestore-driven)
@@ -39,6 +40,8 @@ import {
   getExperience,
   getBlogPosts,
   getProfile,
+  getReviews,
+  submitReview,
 } from './firebase-data.js';
 
 (async () => {
@@ -153,6 +156,7 @@ import {
   let EXPERIENCE = [];
   let LOG_ENTRIES = [];
   let PROFILE = null;
+  let REVIEWS = [];
 
   const STAGE_LABELS = {
     all: 'showing all',
@@ -879,6 +883,147 @@ import {
   }
 
   /* ------------------------------------------------------------------ */
+  /* 11b. REVIEWS (public grid + "leave a review" submission form)       */
+  /* ------------------------------------------------------------------ */
+
+  function initReviewsGrid() {
+    const container = $('#reviewsGrid');
+    if (!container) return;
+
+    if (!REVIEWS || REVIEWS.length === 0) {
+      container.innerHTML = `<p class="empty-state">No reviews yet \u2014 be the first to leave one below.</p>`;
+      return;
+    }
+
+    container.innerHTML = REVIEWS.map((r) => `
+      <div class="review-card">
+        <div class="review-stars" aria-label="${r.rating} out of 5 stars">${'\u2605'.repeat(r.rating)}${'\u2606'.repeat(5 - r.rating)}</div>
+        <p class="review-text">${escapeHTML(r.text)}</p>
+        <div class="review-author">
+          <span class="review-name">${escapeHTML(r.name)}</span>
+          ${r.role ? `<span class="review-role">${escapeHTML(r.role)}</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function initReviewForm() {
+    const form = $('#reviewForm');
+    if (!form) return;
+
+    const nameInput = $('#reviewName');
+    const textInput = $('#reviewText');
+    const ratingInput = $('#reviewRating');
+    const starButtons = $$('.star-btn', $('#reviewRatingStars'));
+
+    const errorName = $('#errorReviewName');
+    const errorText = $('#errorReviewText');
+    const status = $('#reviewFormStatus');
+
+    const MIN_REVIEW_LENGTH = 10;
+
+    // Star picker — click (or focus + arrow keys, via native radiogroup
+    // tabbing) sets the hidden rating input. Defaults to 5 stars filled.
+    function paintStars(value) {
+      starButtons.forEach((btn) => {
+        const isFilled = Number(btn.getAttribute('data-value')) <= value;
+        btn.classList.toggle('is-filled', isFilled);
+        btn.setAttribute('aria-pressed', String(isFilled));
+      });
+    }
+    starButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const value = btn.getAttribute('data-value');
+        ratingInput.value = value;
+        paintStars(Number(value));
+      });
+    });
+    paintStars(Number(ratingInput.value) || 5);
+
+    function setFieldError(input, errorEl, message) {
+      const field = input.closest('.form-field');
+      if (message) {
+        field.classList.add('has-error');
+        errorEl.textContent = message;
+      } else {
+        field.classList.remove('has-error');
+        errorEl.textContent = '';
+      }
+    }
+
+    function validate() {
+      let isValid = true;
+
+      if (!nameInput.value.trim()) {
+        setFieldError(nameInput, errorName, 'Please enter your name.');
+        isValid = false;
+      } else {
+        setFieldError(nameInput, errorName, '');
+      }
+
+      const textVal = textInput.value.trim();
+      if (!textVal) {
+        setFieldError(textInput, errorText, 'Please enter a review.');
+        isValid = false;
+      } else if (textVal.length < MIN_REVIEW_LENGTH) {
+        setFieldError(textInput, errorText, `Review should be at least ${MIN_REVIEW_LENGTH} characters.`);
+        isValid = false;
+      } else {
+        setFieldError(textInput, errorText, '');
+      }
+
+      return isValid;
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const submitBtnOriginalHTML = submitBtn ? submitBtn.innerHTML : '';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = '';
+
+      if (!validate()) {
+        status.textContent = '// Please fix the errors above and try again.';
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="btn-prompt">$</span> submitting...';
+      }
+      status.textContent = '// submitting review...';
+
+      const result = await submitReview({
+        name: nameInput.value.trim(),
+        role: $('#reviewRole').value.trim(),
+        rating: Number(ratingInput.value) || 5,
+        text: textInput.value.trim(),
+      });
+
+      if (result.ok) {
+        status.textContent = '// Thanks! Your review is in \u2014 it\u2019ll appear here once it\u2019s been checked.';
+        form.reset();
+        ratingInput.value = '5';
+        paintStars(5);
+      } else {
+        status.textContent = `// ${result.message}`;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = submitBtnOriginalHTML;
+      }
+    });
+
+    [nameInput, textInput].forEach((input) => {
+      input.addEventListener('input', () => {
+        const field = input.closest('.form-field');
+        if (field.classList.contains('has-error')) validate();
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------------ */
   /* 12. CONTACT FORM VALIDATION                                         */
   /* ------------------------------------------------------------------ */
 
@@ -1140,12 +1285,13 @@ import {
       firebase-data.js always resolves (never throws), so no try/catch
       is needed here — this can never leave the page blank. */
   async function loadAllData() {
-    const [projects, skills, experience, blogPosts, profile] = await Promise.all([
+    const [projects, skills, experience, blogPosts, profile, reviews] = await Promise.all([
       getProjects(),
       getSkills(),
       getExperience(),
       getBlogPosts(),
       getProfile(),
+      getReviews(),
     ]);
 
     PROJECTS = projects;
@@ -1153,6 +1299,7 @@ import {
     EXPERIENCE = experience;
     LOG_ENTRIES = blogPosts;
     PROFILE = profile;
+    REVIEWS = reviews;
   }
 
   /** Re-fetches all content and re-renders every data-driven section.
@@ -1168,6 +1315,7 @@ import {
     initTypewriter();
     initGitLog();
     initStdoutLog();
+    initReviewsGrid();
     applyFilterToGrids();
   }
 
@@ -1179,6 +1327,7 @@ import {
     initGalleryNav();
     initLightbox();
     initContactForm();
+    initReviewForm();
 
     // Fetch all content (always live from Firestore) before rendering
     // anything that depends on it.
@@ -1192,6 +1341,7 @@ import {
     initViewAllButton();
     initGitLog();
     initStdoutLog();
+    initReviewsGrid();
 
     // Initial project render (featured grid only; full grid renders lazily
     // the first time "View all projects" is clicked).

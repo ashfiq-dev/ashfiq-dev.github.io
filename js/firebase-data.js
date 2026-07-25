@@ -74,6 +74,17 @@ import { firebaseConfig, isFirebaseConfigured } from './firebase-config.js';
     - title: string
     - desc: string
     - order: number (optional)
+
+  reviews (collection "reviews") — client reviews, moderated before
+           they're publicly visible
+    - name: string
+    - role: string                 // role/company, optional
+    - rating: number                // 1-5
+    - text: string
+    - status: string                // "pending" | "approved" — only
+                                     // "approved" docs are shown on the
+                                     // public site (see getReviews())
+    - createdAt: Firestore Timestamp (server-generated on submit)
 */
 
 /* ------------------------------------------------------------------ */
@@ -260,6 +271,19 @@ function normalizeProfile(doc) {
   };
 }
 
+function normalizeReview(doc) {
+  return {
+    id: doc.id,
+    name: doc.name || 'Anonymous',
+    role: doc.role || '',
+    rating: Math.min(5, Math.max(1, Number(doc.rating) || 5)),
+    text: doc.text || '',
+    createdAtMs: doc.createdAt && typeof doc.createdAt.toMillis === 'function'
+      ? doc.createdAt.toMillis()
+      : 0,
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /* 5. PUBLIC GETTERS — used by script.js                               */
 /* ------------------------------------------------------------------ */
@@ -292,4 +316,64 @@ export async function getProfile() {
   const doc = await fetchProfileSafe();
   if (!doc) return EMPTY_PROFILE;
   return normalizeProfile(doc);
+}
+
+/**
+ * Fetches only APPROVED reviews for public display. Filtered with a
+ * Firestore `where`, not `orderBy` — combining where+orderBy on
+ * different fields needs a composite index set up in the Firebase
+ * console, which we'd rather not require just to ship a reviews
+ * section. Sorting newest-first happens here instead, client-side.
+ */
+export async function getReviews() {
+  const ctx = await getFirestoreDb();
+  if (!ctx) return [];
+
+  try {
+    const { db, firestoreModule } = ctx;
+    const { collection, getDocs, getDocsFromServer, query, where } = firestoreModule;
+    const fetchDocs = getDocsFromServer || getDocs;
+
+    const colRef = collection(db, 'reviews');
+    const snapshot = await fetchDocs(query(colRef, where('status', '==', 'approved')));
+    if (snapshot.empty) return [];
+
+    return snapshot.docs
+      .map((doc) => normalizeReview({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => b.createdAtMs - a.createdAtMs);
+  } catch (err) {
+    console.warn('[firebase-data] Failed to fetch "reviews" — showing none.', err);
+    return [];
+  }
+}
+
+/**
+ * Public "leave a review" submission. Always lands as status:"pending"
+ * — see firestore.rules, which enforces that server-side too so this
+ * can't be bypassed from devtools. Never shows up on the site until
+ * the admin approves it from /admin.
+ */
+export async function submitReview({ name, role, rating, text }) {
+  const ctx = await getFirestoreDb();
+  if (!ctx) {
+    return { ok: false, message: 'Reviews aren\u2019t available right now \u2014 please try again later.' };
+  }
+
+  try {
+    const { db, firestoreModule } = ctx;
+    const { collection, addDoc, serverTimestamp } = firestoreModule;
+
+    await addDoc(collection(db, 'reviews'), {
+      name: (name || '').trim().slice(0, 80),
+      role: (role || '').trim().slice(0, 100),
+      rating: Math.min(5, Math.max(1, Math.round(Number(rating)) || 5)),
+      text: (text || '').trim().slice(0, 1000),
+      status: 'pending',
+      createdAt: serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (err) {
+    console.warn('[firebase-data] Failed to submit review.', err);
+    return { ok: false, message: 'Couldn\u2019t submit your review \u2014 please try again.' };
+  }
 }

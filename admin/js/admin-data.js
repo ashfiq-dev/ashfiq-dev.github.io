@@ -36,6 +36,11 @@ import { firebaseConfig, isFirebaseConfigured } from '../../js/firebase-config.j
 
   blogPosts (collection "blogPosts")
     - timestamp, level, title, desc, order: number
+
+  reviews (collection "reviews")
+    - name, role, rating: number (1-5), text, status ("pending"|"approved"),
+      createdAt: server timestamp — no "order" field; sorted here by
+      status then recency instead (see listReviews below)
 */
 
 const PROFILE_DOC_ID = 'main';
@@ -239,3 +244,56 @@ export const listBlogPosts = () => listDocs('blogPosts');
 export const createBlogPost = (fields) => createDoc('blogPosts', fields);
 export const updateBlogPost = (id, fields) => updateDocById('blogPosts', id, fields);
 export const deleteBlogPost = (id) => deleteDocById('blogPosts', id);
+
+/* ------------------------------------------------------------------ */
+/* 8. REVIEWS                                                          */
+/* ------------------------------------------------------------------ */
+/* Doesn't reuse the generic listDocs()/createDoc() helpers above:
+   those order by an "order" field that review docs don't have (public
+   submissions come from firebase-data.js, not this file), so an
+   orderBy('order') query would silently exclude every one of them. */
+
+export async function listReviews() {
+  const ctx = await getFirestoreCtx();
+  if (!ctx) return notConfiguredResult();
+
+  try {
+    const { db, firestoreModule } = ctx;
+    const { collection, getDocs } = firestoreModule;
+
+    const snapshot = await getDocs(collection(db, 'reviews'));
+    const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    // Pending reviews need attention first; within each group, newest first.
+    data.sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'pending' ? -1 : 1;
+      const aMs = a.createdAt && typeof a.createdAt.toMillis === 'function' ? a.createdAt.toMillis() : 0;
+      const bMs = b.createdAt && typeof b.createdAt.toMillis === 'function' ? b.createdAt.toMillis() : 0;
+      return bMs - aMs;
+    });
+
+    return { ok: true, data };
+  } catch (err) {
+    console.warn('[admin-data] Failed to list "reviews".', err);
+    return { ok: false, message: 'Couldn\u2019t load reviews \u2014 try again.' };
+  }
+}
+
+export async function createReview(fields) {
+  const ctx = await getFirestoreCtx();
+  if (!ctx) return notConfiguredResult();
+
+  try {
+    const { db, firestoreModule } = ctx;
+    const { collection, addDoc, serverTimestamp } = firestoreModule;
+
+    await addDoc(collection(db, 'reviews'), { ...fields, createdAt: serverTimestamp() });
+    return { ok: true };
+  } catch (err) {
+    console.warn('[admin-data] Failed to create review.', err);
+    return { ok: false, message: 'Couldn\u2019t save \u2014 try again.' };
+  }
+}
+
+export const updateReview = (id, fields) => updateDocById('reviews', id, fields);
+export const deleteReview = (id) => deleteDocById('reviews', id);

@@ -1035,6 +1035,53 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
 .modal-actions{ display:flex; gap:12px; flex-wrap:wrap; }
 
 /* ---------------------------------------------------------------------- */
+/* 13b. REVIEWS                                                          */
+/* ---------------------------------------------------------------------- */
+.reviews-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+  gap:20px;
+  margin-bottom:32px;
+}
+.review-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.review-stars{ color:var(--c-automate); font-size:1rem; letter-spacing:2px; }
+.review-text{ color:var(--text-muted); line-height:1.65; flex:1; }
+.review-text::before{ content:"\201C"; }
+.review-text::after{ content:"\201D"; }
+.review-author{ display:flex; flex-direction:column; gap:2px; }
+.review-name{ font-weight:600; color:var(--text); font-size:0.92rem; }
+.review-role{ font-family:var(--font-mono); font-size:0.78rem; color:var(--text-dim); }
+
+.review-form-card{ max-width:520px; }
+.star-picker{ display:flex; gap:6px; }
+.star-btn{
+  background:none;
+  border:none;
+  cursor:pointer;
+  font-size:1.4rem;
+  line-height:1;
+  padding:2px;
+  color:var(--border);
+  transition:color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.star-btn:hover, .star-btn:focus-visible{ transform:scale(1.15); }
+.star-btn.is-filled{ color:var(--c-automate); }
+.review-form-note{
+  font-family:var(--font-mono);
+  font-size:0.75rem;
+  color:var(--text-dim);
+  margin:0;
+}
+
+/* ---------------------------------------------------------------------- */
 /* 14. RESPONSIVE                                                        */
 /* ---------------------------------------------------------------------- */
 @media (max-width: 860px){

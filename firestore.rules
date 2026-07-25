@@ -81,6 +81,38 @@ service cloud.firestore {
       allow write: if isAdminUid();
     }
 
+    /* reviews — the one collection visitors (not just the admin) can
+       write to, since it's a public "leave a review" form. To keep
+       that safe without an account system:
+         - anyone can READ (the public site only *displays* docs where
+           status == "approved", but the doc itself is still readable
+           by direct query — fine here since a review has no private
+           data in it)
+         - anyone can CREATE, but ONLY as a "pending" doc with sane,
+           bounded fields — this is what stops a visitor from writing
+           an already-"approved" review straight onto the site, or
+           stuffing huge/garbage data into a field
+         - only the admin can UPDATE (approve) or DELETE a review */
+    match /reviews/{docId} {
+      allow read: if true;
+      allow create: if isAdminUid() || (
+        request.resource.data.status == 'pending' &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 80 &&
+        request.resource.data.role is string &&
+        request.resource.data.role.size() <= 100 &&
+        request.resource.data.rating is int &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5 &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() > 0 &&
+        request.resource.data.text.size() <= 1000 &&
+        request.resource.data.createdAt == request.time
+      );
+      allow update, delete: if isAdminUid();
+    }
+
     /* ------------------------------------------------------------------ */
     /* 4. DEFAULT DENY                                                     */
     /* ------------------------------------------------------------------ */

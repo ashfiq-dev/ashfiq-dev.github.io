@@ -35,6 +35,7 @@
       <a href="#projects">projects</a>
       <a href="#experience">experience</a>
       <a href="#log">log</a>
+      <a href="#reviews">reviews</a>
       <a href="#contact">contact</a>
     </nav>
 
@@ -316,11 +317,72 @@
   </section>
 
   <!-- ============================================
+       REVIEWS
+  ============================================ -->
+  <section class="section section-alt" id="reviews">
+    <div class="section-inner">
+      <h2 class="section-title"><span class="section-title-num">05.</span> Reviews</h2>
+      <p class="section-sub">What clients have said after working together.</p>
+
+      <div class="reviews-grid" id="reviewsGrid">
+        <!-- populated by JS -->
+      </div>
+
+      <div class="contact-card review-form-card">
+        <div class="terminal-titlebar">
+          <span class="terminal-dot dot-red"></span>
+          <span class="terminal-dot dot-yellow"></span>
+          <span class="terminal-dot dot-green"></span>
+          <span class="terminal-titletext">POST /reviews</span>
+        </div>
+
+        <form class="contact-form" id="reviewForm" novalidate>
+          <p class="contact-form-status" id="reviewFormStatus" role="status" aria-live="polite"></p>
+
+          <div class="form-field">
+            <label for="reviewName">name</label>
+            <input type="text" id="reviewName" name="name" autocomplete="name" placeholder="Jane Doe" required maxlength="80">
+            <span class="form-error" id="errorReviewName"></span>
+          </div>
+
+          <div class="form-field">
+            <label for="reviewRole">role / company (optional)</label>
+            <input type="text" id="reviewRole" name="role" placeholder="Founder, Acme Inc." maxlength="100">
+          </div>
+
+          <div class="form-field">
+            <label for="reviewRatingStars">rating</label>
+            <div class="star-picker" id="reviewRatingStars" role="radiogroup" aria-label="Rating out of 5 stars">
+              <button type="button" class="star-btn" data-value="1" aria-label="1 star" aria-pressed="false">&#9733;</button>
+              <button type="button" class="star-btn" data-value="2" aria-label="2 stars" aria-pressed="false">&#9733;</button>
+              <button type="button" class="star-btn" data-value="3" aria-label="3 stars" aria-pressed="false">&#9733;</button>
+              <button type="button" class="star-btn" data-value="4" aria-label="4 stars" aria-pressed="false">&#9733;</button>
+              <button type="button" class="star-btn" data-value="5" aria-label="5 stars" aria-pressed="false">&#9733;</button>
+            </div>
+            <input type="hidden" id="reviewRating" name="rating" value="5">
+          </div>
+
+          <div class="form-field">
+            <label for="reviewText">review</label>
+            <textarea id="reviewText" name="text" rows="4" placeholder="How was your experience working together?" required maxlength="1000"></textarea>
+            <span class="form-error" id="errorReviewText"></span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <span class="btn-prompt">$</span> submit_review()
+          </button>
+          <p class="review-form-note">Reviews are checked before they go live, so yours may take a little while to appear.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
        CONTACT — POST /contact
   ============================================ -->
-  <section class="section section-alt" id="contact">
+  <section class="section" id="contact">
     <div class="section-inner">
-      <h2 class="section-title"><span class="section-title-num">05.</span> Contact</h2>
+      <h2 class="section-title"><span class="section-title-num">06.</span> Contact</h2>
       <p class="section-sub">Send a message below, or reach out directly via the links.</p>
 
       <div class="contact-grid">

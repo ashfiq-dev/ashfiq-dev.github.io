@@ -24,6 +24,7 @@ import {
   listSkillGroups, createSkillGroup, updateSkillGroup, deleteSkillGroup,
   listExperience, createExperience, updateExperience, deleteExperience,
   listBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost,
+  listReviews, createReview, updateReview, deleteReview,
 } from './admin-data.js';
 
 const root = document.getElementById('admin-root');
@@ -164,6 +165,7 @@ const TABS = [
   { id: 'projects', label: 'Projects' },
   { id: 'experience', label: 'Experience' },
   { id: 'blog', label: 'Blog' },
+  { id: 'reviews', label: 'Reviews' },
 ];
 
 function renderDashboard(user) {
@@ -207,6 +209,7 @@ function activateTab(tabId, navButtons, content) {
     projects: renderProjectsTab,
     experience: () => renderSimpleCollectionTab(content, experienceTabConfig),
     blog: () => renderSimpleCollectionTab(content, blogTabConfig),
+    reviews: () => renderSimpleCollectionTab(content, reviewsTabConfig),
   };
 
   content.innerHTML = '<div class="empty-state"><span class="spinner"></span> Loading\u2026</div>';
@@ -874,6 +877,30 @@ const blogTabConfig = {
   ],
 };
 
+const REVIEW_STATUSES = [
+  { value: 'pending', label: 'Pending \u2014 not shown on site' },
+  { value: 'approved', label: 'Approved \u2014 visible on site' },
+];
+
+const reviewsTabConfig = {
+  title: 'Reviews',
+  sub: 'Client reviews submitted from the site. Switch status to \u201cApproved\u201d to make one public.',
+  list: listReviews, create: createReview, update: updateReview, remove: deleteReview,
+  itemTitle: (item) => (item.name || 'Anonymous') + (item.status === 'pending' ? '  \u2014  needs review' : ''),
+  itemSub: (item) => [
+    item.role,
+    '\u2605'.repeat(Math.max(1, Math.min(5, Number(item.rating) || 5))),
+    item.status === 'approved' ? 'Approved' : 'Pending',
+  ].filter(Boolean).join(' \u00b7 '),
+  fields: [
+    { key: 'name', label: 'Name', type: 'text' },
+    { key: 'role', label: 'Role / company', type: 'text', placeholder: 'e.g. Founder, Acme Inc.' },
+    { key: 'rating', label: 'Rating (1\u20135)', type: 'number', min: 1, max: 5, default: 5 },
+    { key: 'text', label: 'Review', type: 'textarea' },
+    { key: 'status', label: 'Status', type: 'select', options: REVIEW_STATUSES, default: 'pending' },
+  ],
+};
+
 async function renderSimpleCollectionTab(content, config) {
   const result = await config.list();
   content.innerHTML = '';
@@ -947,6 +974,19 @@ async function renderSimpleCollectionTab(content, config) {
         input = el('select', {}, PIPELINE_STAGES.map((s) =>
           el('option', { value: s.value, selected: current === s.value ? 'selected' : false }, s.label)
         ));
+      } else if (f.type === 'number') {
+        const current = item[f.key] ?? f.default ?? '';
+        input = el('input', {
+          type: 'number',
+          min: f.min ?? false,
+          max: f.max ?? false,
+          value: current,
+        });
+      } else if (f.type === 'select') {
+        const current = item[f.key] || f.default || (f.options[0] && f.options[0].value);
+        input = el('select', {}, f.options.map((o) =>
+          el('option', { value: o.value, selected: current === o.value ? 'selected' : false }, o.label)
+        ));
       } else if (f.type === 'stage-color') {
         // Accent color is derived from the stage, not typed in — always
         // matches --c-scrape / --c-analyze / --c-automate / --c-ml / --c-ship.
@@ -979,6 +1019,8 @@ async function renderSimpleCollectionTab(content, config) {
         for (const [key, { input, type }] of Object.entries(inputs)) {
           if (type === 'list') {
             fields[key] = input.value.split(',').map((v) => v.trim()).filter(Boolean);
+          } else if (type === 'number') {
+            fields[key] = Math.round(Number(input.value)) || 0;
           } else {
             fields[key] = input.value.trim();
           }
