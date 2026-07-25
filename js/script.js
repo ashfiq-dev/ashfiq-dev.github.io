@@ -537,6 +537,7 @@ import {
   function initViewAllButton() {
     const btn = $('#viewAllBtn');
     const fullGrid = $('#fullGrid');
+    const featuredGrid = $('#featuredGrid');
     const filterChips = $('#filterChips');
     if (!btn || !fullGrid) return;
 
@@ -549,11 +550,16 @@ import {
 
       if (next) {
         if (filterChips) filterChips.hidden = false;
+        // fullGrid already contains every project that matches the active
+        // filter, including whichever ones featuredGrid was showing — so
+        // keeping featuredGrid visible too would duplicate those cards.
+        if (featuredGrid) featuredGrid.hidden = true;
         fullGrid.hidden = false;
         state.fullGridRendered = true;
         applyFilterToGrids();
       } else {
         fullGrid.hidden = true;
+        if (featuredGrid) featuredGrid.hidden = false;
         // Filter chips remain visible once revealed; only the grid collapses.
       }
     });
