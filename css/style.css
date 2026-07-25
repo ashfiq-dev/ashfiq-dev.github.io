@@ -1016,7 +1016,10 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
 .modal-desc p, .modal-desc div{ margin:0 0 1em; }
 .modal-desc p:last-child, .modal-desc div:last-child{ margin-bottom:0; }
 .modal-desc h3{ color:var(--text); font-size:1.05rem; margin:0 0 .5em; }
-.modal-desc ul, .modal-desc ol{ margin:0 0 1em 1.3em; }
+.modal-desc ul{ margin:0 0 1em 1.3em; list-style:disc; padding-left:1em; }
+.modal-desc ol{ margin:0 0 1em 1.3em; list-style:decimal; padding-left:1em; }
+.modal-desc li{ margin:0 0 .4em; }
+.modal-desc li:last-child{ margin-bottom:0; }
 .modal-desc a{ color:var(--c-scrape); text-decoration:underline; text-underline-offset:2px; }
 .modal-desc a:hover{ color:var(--c-ship); }
 .modal-tech{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:26px; }
