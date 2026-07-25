@@ -100,6 +100,10 @@ import {
     activeFilter: 'all', // 'all' | 'scrape' | 'analyze' | 'automate' | 'ml' | 'ship'
     fullGridRendered: false,
     lastFocusedBeforeModal: null,
+    galleryItems: [],
+    galleryIndex: 0,
+    lightboxIndex: 0,
+    lightboxAlt: '',
   };
 
   /* ------------------------------------------------------------------ */
@@ -296,6 +300,22 @@ import {
       if (cursor && cursor.classList.contains('terminal-cursor')) cursor.style.display = 'none';
       return;
     }
+
+    // initTypewriter() can be called again later (refreshContent() reruns
+    // it on visibility change / bfcache restore). Without guarding against
+    // that, a second IntersectionObserver + typeNext() loop can end up
+    // running concurrently with a leftover one from a previous call,
+    // both appending characters to the same element — producing the
+    // doubled/scrambled text bug. Cancel any previous run first.
+    if (target.__typewriterObserver) {
+      target.__typewriterObserver.disconnect();
+      target.__typewriterObserver = null;
+    }
+    if (target.__typewriterTimeoutId) {
+      clearTimeout(target.__typewriterTimeoutId);
+      target.__typewriterTimeoutId = null;
+    }
+
     target.setAttribute('data-full-text', fullText);
     let hasRun = false;
 
@@ -313,10 +333,13 @@ import {
       const CHAR_DELAY = 18; // ms per character
 
       function typeNext() {
-        if (i >= fullText.length) return;
+        if (i >= fullText.length) {
+          target.__typewriterTimeoutId = null;
+          return;
+        }
         target.textContent += fullText.charAt(i);
         i++;
-        setTimeout(typeNext, CHAR_DELAY);
+        target.__typewriterTimeoutId = setTimeout(typeNext, CHAR_DELAY);
       }
       typeNext();
     }
@@ -330,6 +353,7 @@ import {
           }
         });
       }, { threshold: 0.4 });
+      target.__typewriterObserver = observer;
       observer.observe(target);
     } else {
       // Fallback for very old browsers: just run it.
@@ -455,6 +479,97 @@ import {
     });
   }
 
+  function renderGallerySlide() {
+    const gallery = $('#modalGallery');
+    const dotsWrap = $('#galleryDots');
+    const prevBtn = $('#galleryPrev');
+    const nextBtn = $('#galleryNext');
+    if (!gallery) return;
+
+    const items = state.galleryItems || [];
+    const idx = state.galleryIndex || 0;
+
+    gallery.style.transform = `translateX(-${idx * 100}%)`;
+
+    if (dotsWrap) {
+      $$('.gallery-dot', dotsWrap).forEach((dot, i) => {
+        dot.classList.toggle('is-active', i === idx);
+      });
+    }
+
+    const multiple = items.length > 1;
+    if (prevBtn) prevBtn.hidden = !multiple;
+    if (nextBtn) nextBtn.hidden = !multiple;
+  }
+
+  function goToGallerySlide(index) {
+    const items = state.galleryItems || [];
+    if (!items.length) return;
+    state.galleryIndex = (index + items.length) % items.length;
+    renderGallerySlide();
+  }
+
+  function initGalleryNav() {
+    const prevBtn = $('#galleryPrev');
+    const nextBtn = $('#galleryNext');
+    if (prevBtn) prevBtn.addEventListener('click', () => goToGallerySlide((state.galleryIndex || 0) - 1));
+    if (nextBtn) nextBtn.addEventListener('click', () => goToGallerySlide((state.galleryIndex || 0) + 1));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* 9b. FULLSCREEN LIGHTBOX (click a gallery image to view it fullscreen) */
+  /* ------------------------------------------------------------------ */
+
+  function openLightbox(index) {
+    const overlay = $('#lightboxOverlay');
+    const img = $('#lightboxImg');
+    const items = (state.galleryItems || []).filter(isImageUrl);
+    if (!overlay || !img || !items.length) return;
+
+    state.lightboxIndex = index;
+    img.src = items[index];
+    img.alt = state.lightboxAlt || '';
+    overlay.hidden = false;
+  }
+
+  function closeLightbox() {
+    const overlay = $('#lightboxOverlay');
+    if (!overlay || overlay.hidden) return;
+    overlay.hidden = true;
+    $('#lightboxImg').src = '';
+  }
+
+  function stepLightbox(delta) {
+    const items = (state.galleryItems || []).filter(isImageUrl);
+    if (!items.length) return;
+    state.lightboxIndex = (state.lightboxIndex + delta + items.length) % items.length;
+    $('#lightboxImg').src = items[state.lightboxIndex];
+  }
+
+  function initLightbox() {
+    const overlay = $('#lightboxOverlay');
+    const closeBtn = $('#lightboxClose');
+    const prevBtn = $('#lightboxPrev');
+    const nextBtn = $('#lightboxNext');
+    if (!overlay) return;
+
+    closeBtn.addEventListener('click', closeLightbox);
+    prevBtn.addEventListener('click', () => stepLightbox(-1));
+    nextBtn.addEventListener('click', () => stepLightbox(1));
+
+    // Click the dark backdrop (not the image itself) to close.
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeLightbox();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (overlay.hidden) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') stepLightbox(-1);
+      if (e.key === 'ArrowRight') stepLightbox(1);
+    });
+  }
+
   /* ------------------------------------------------------------------ */
   /* 9. PROJECT MODAL                                                    */
   /* ------------------------------------------------------------------ */
@@ -463,6 +578,7 @@ import {
     const overlay = $('#modalOverlay');
     const modal = $('#modal');
     const gallery = $('#modalGallery');
+    const dotsWrap = $('#galleryDots');
     const stageTag = $('#modalStageTag');
     const title = $('#modalTitle');
     const desc = $('#modalDesc');
@@ -472,15 +588,43 @@ import {
 
     state.lastFocusedBeforeModal = triggerEl || document.activeElement;
 
-    // Gallery
+    // Gallery — one slide visible at a time, navigated via prev/next
+    // buttons + dots instead of a horizontal scrollbar.
     const galleryItems = project.gallery && project.gallery.length ? project.gallery : [project.title];
+    state.galleryItems = galleryItems;
+    state.galleryIndex = 0;
+    state.lightboxAlt = `${project.title} screenshot`;
+
+    gallery.style.transform = 'translateX(0)';
     gallery.innerHTML = galleryItems
-      .map((item) =>
+      .map((item, i) =>
         isImageUrl(item)
-          ? `<div class="modal-gallery-img has-image"><img src="${escapeHTML(item)}" alt="${escapeHTML(project.title)} screenshot" loading="lazy"></div>`
-          : `<div class="modal-gallery-img">${escapeHTML(item)}</div>`
+          ? `<div class="modal-gallery-img has-image" data-index="${i}"><img src="${escapeHTML(item)}" alt="${escapeHTML(project.title)} screenshot" loading="lazy"></div>`
+          : `<div class="modal-gallery-img" data-index="${i}">${escapeHTML(item)}</div>`
       )
       .join('');
+
+    // Clicking an image opens it fullscreen (lightbox index only counts
+    // actual images, since text placeholders can't be shown fullscreen).
+    $$('.modal-gallery-img.has-image', gallery).forEach((el) => {
+      el.addEventListener('click', () => {
+        const imageItems = galleryItems.filter(isImageUrl);
+        const clickedSrc = galleryItems[Number(el.getAttribute('data-index'))];
+        const imgIndex = imageItems.indexOf(clickedSrc);
+        openLightbox(imgIndex === -1 ? 0 : imgIndex);
+      });
+    });
+
+    if (dotsWrap) {
+      dotsWrap.innerHTML = galleryItems.length > 1
+        ? galleryItems.map((_, i) => `<button type="button" class="gallery-dot${i === 0 ? ' is-active' : ''}" data-index="${i}" aria-label="Go to image ${i + 1}"></button>`).join('')
+        : '';
+      $$('.gallery-dot', dotsWrap).forEach((dot) => {
+        dot.addEventListener('click', () => goToGallerySlide(Number(dot.getAttribute('data-index'))));
+      });
+    }
+
+    renderGallerySlide();
 
     // Stage tag
     const stageColor = `var(--c-${project.stage})`;
@@ -532,6 +676,7 @@ import {
     overlay.hidden = true;
     document.body.style.overflow = '';
     document.removeEventListener('keydown', onModalKeydown);
+    closeLightbox();
 
     if (state.lastFocusedBeforeModal && typeof state.lastFocusedBeforeModal.focus === 'function') {
       state.lastFocusedBeforeModal.focus();
@@ -942,6 +1087,8 @@ import {
     initThemeToggle();
     initMobileNav();
     initModal();
+    initGalleryNav();
+    initLightbox();
     initContactForm();
 
     // Fetch all content (always live from Firestore) before rendering

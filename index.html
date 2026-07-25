@@ -406,8 +406,13 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" id="modal">
     <button class="modal-close" id="modalClose" type="button" aria-label="Close dialog">&times;</button>
 
-    <div class="modal-gallery" id="modalGallery">
-      <!-- populated by JS -->
+    <div class="modal-gallery-wrap" id="modalGalleryWrap">
+      <div class="modal-gallery" id="modalGallery">
+        <!-- populated by JS -->
+      </div>
+      <button type="button" class="gallery-nav gallery-nav-prev" id="galleryPrev" aria-label="Previous image">&lsaquo;</button>
+      <button type="button" class="gallery-nav gallery-nav-next" id="galleryNext" aria-label="Next image">&rsaquo;</button>
+      <div class="gallery-dots" id="galleryDots"><!-- populated by JS --></div>
     </div>
 
     <div class="modal-body">
@@ -423,6 +428,17 @@
     </div>
   </div>
 </div>
+
+<!-- ============================================
+     IMAGE LIGHTBOX (fullscreen gallery image view)
+============================================ -->
+<div class="lightbox-overlay" id="lightboxOverlay" hidden>
+  <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Close fullscreen image">&times;</button>
+  <button type="button" class="gallery-nav gallery-nav-prev lightbox-nav" id="lightboxPrev" aria-label="Previous image">&lsaquo;</button>
+  <img class="lightbox-img" id="lightboxImg" src="" alt="">
+  <button type="button" class="gallery-nav gallery-nav-next lightbox-nav" id="lightboxNext" aria-label="Next image">&rsaquo;</button>
+</div>
+
 
 <!-- type="module" is required because script.js uses ES module imports
      to pull in js/firebase-data.js / js/firebase-config.js. Works on
