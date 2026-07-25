@@ -714,7 +714,11 @@ import {
       return isValid;
     }
 
-    form.addEventListener('submit', (e) => {
+    const WEB3FORMS_ACCESS_KEY = 'fd660697-3e9b-47ef-be48-ea08a7c794b2';
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const submitBtnOriginalHTML = submitBtn ? submitBtn.innerHTML : '';
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       status.textContent = '';
 
@@ -723,11 +727,41 @@ import {
         return;
       }
 
-      // No real network request — this is a client-side-only demo.
-      // Replace this block with a fetch() call to your own backend or a
-      // form service (e.g. Formspree) if you want real submissions.
-      status.textContent = '// Message sent — thanks for reaching out! I\u2019ll get back to you soon.';
-      form.reset();
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="btn-prompt">$</span> sending...';
+      }
+      status.textContent = '// sending message...';
+
+      try {
+        const response = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            access_key: WEB3FORMS_ACCESS_KEY,
+            name: nameInput.value.trim(),
+            email: emailInput.value.trim(),
+            message: messageInput.value.trim(),
+            subject: `New portfolio contact message from ${nameInput.value.trim()}`,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          status.textContent = '// Message sent \u2014 thanks for reaching out! I\u2019ll get back to you soon.';
+          form.reset();
+        } else {
+          status.textContent = '// Something went wrong sending your message. Please try again or email me directly.';
+        }
+      } catch (err) {
+        status.textContent = '// Network error \u2014 please try again or email me directly.';
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = submitBtnOriginalHTML;
+        }
+      }
     });
 
     // Clear a field's error as soon as the user starts fixing it.
