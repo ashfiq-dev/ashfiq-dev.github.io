@@ -1491,8 +1491,8 @@ import {
   function skillGroupHTML(group) {
     const color = group.color || 'var(--c-scrape)';
     return `
-      <div class="skill-group">
-        <h3 class="skill-group-title" style="--group-color:${escapeHTML(color)}">${escapeHTML(group.group)}</h3>
+      <div class="skill-group" style="--group-color:${escapeHTML(color)}">
+        <h3 class="skill-group-title">${escapeHTML(group.group)}</h3>
         <div class="skill-tags">
           ${(group.tags || []).map((tag) => `<span class="skill-tag">${escapeHTML(tag)}</span>`).join('')}
         </div>

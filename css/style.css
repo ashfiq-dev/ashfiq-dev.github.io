@@ -537,12 +537,32 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
   grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
   gap:28px;
 }
+@keyframes skillCardIn{
+  from{ opacity:0; transform:translateY(14px); }
+  to{ opacity:1; transform:translateY(0); }
+}
 .skill-group{
-  background:var(--card);
+  animation:skillCardIn 0.5s var(--ease) both;
+}
+.skill-group:nth-child(1){ animation-delay:0.02s; }
+.skill-group:nth-child(2){ animation-delay:0.08s; }
+.skill-group:nth-child(3){ animation-delay:0.14s; }
+.skill-group:nth-child(4){ animation-delay:0.2s; }
+.skill-group:nth-child(5){ animation-delay:0.26s; }
+.skill-group:nth-child(6){ animation-delay:0.32s; }
+.skill-group{
+  background:linear-gradient(180deg, color-mix(in srgb, var(--group-color) 8%, var(--card)), var(--card) 65%);
   border:1px solid var(--border);
   border-radius:var(--radius-md);
   padding:22px;
   border-top:3px solid var(--group-color);
+  box-shadow:0 0 0 0 transparent;
+  transition:transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.skill-group:hover{
+  transform:translateY(-4px);
+  border-color:color-mix(in srgb, var(--group-color) 55%, var(--border));
+  box-shadow:0 12px 28px -14px color-mix(in srgb, var(--group-color) 55%, transparent);
 }
 .skill-group-title{
   color:var(--group-color);
@@ -556,11 +576,18 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
 .skill-tag{
   font-family:var(--font-mono);
   font-size:0.78rem;
-  background:var(--bg-alt);
-  border:1px solid var(--border);
+  background:color-mix(in srgb, var(--group-color) 10%, var(--bg-alt));
+  border:1px solid color-mix(in srgb, var(--group-color) 30%, var(--border));
   padding:6px 12px;
   border-radius:999px;
   color:var(--text-muted);
+  transition:background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.skill-tag:hover{
+  background:color-mix(in srgb, var(--group-color) 30%, var(--bg-alt));
+  border-color:var(--group-color);
+  color:var(--text);
+  transform:translateY(-2px);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -737,9 +764,10 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
 /* ---------------------------------------------------------------------- */
 /* 10. LOG — stdout                                                       */
 /* ---------------------------------------------------------------------- */
-.stdout-body{ padding:20px 24px; font-family:var(--font-mono); font-size:0.85rem; max-height:520px; overflow-y:auto; }
-.log-entry{ padding:12px 0; border-bottom:1px solid var(--border); }
+.stdout-body{ padding:0; font-family:var(--font-mono); font-size:0.85rem; max-height:520px; overflow-y:auto; }
+.log-entry{ padding:14px 24px; border-bottom:1px solid var(--border); }
 .log-entry:last-child{ border-bottom:none; }
+.log-entry:nth-child(even){ background:var(--bg-alt); }
 .log-meta{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; align-items:baseline; }
 .log-level{
   font-weight:700;
