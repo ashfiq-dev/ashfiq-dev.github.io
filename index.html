@@ -16,6 +16,24 @@
 <body>
 
 <!-- ============================================
+     BOOT SPLASH (first-load intro)
+============================================ -->
+<div class="boot-splash" id="bootSplash" aria-hidden="true">
+  <div class="boot-splash-text">
+    <span id="bootSplashLine">$ booting portfolio.exe</span><span class="boot-splash-cursor">▋</span>
+  </div>
+  <div class="boot-splash-bar"><div class="boot-splash-bar-fill" id="bootSplashFill"></div></div>
+</div>
+
+<!-- ============================================
+     SCROLL PROGRESS BAR
+============================================ -->
+<div class="scroll-progress" id="scrollProgress" aria-hidden="true">
+  <span class="scroll-progress-track"><span class="scroll-progress-fill" id="scrollProgressFill"></span></span>
+  <span class="scroll-progress-pct" id="scrollProgressPct">000%</span>
+</div>
+
+<!-- ============================================
      SKIP LINK (accessibility)
 ============================================ -->
 <a class="skip-link" href="#main">Skip to content</a>
@@ -64,6 +82,8 @@
   ============================================ -->
   <section class="hero" id="hero">
     <div class="hero-bg" aria-hidden="true"></div>
+    <div class="hero-grid" aria-hidden="true"></div>
+    <div class="hero-particles" id="heroParticles" aria-hidden="true"></div>
 
     <div class="hero-inner">
       <p class="hero-eyebrow">// python automation & data engineering</p>

@@ -68,6 +68,143 @@ import {
       "'": '&#39;',
     }[ch]));
 
+  /* ------------------------------------------------------------------ */
+  /* 1b. HEAVY / SIGNATURE ANIMATIONS                                     */
+  /* ------------------------------------------------------------------ */
+
+  /** One shared IntersectionObserver drives every scroll-reveal effect
+      (section titles, project cards, git-log commits, log entries,
+      review cards). Elements get 'is-revealed' added once, then stop
+      being observed — reveals never re-trigger on scroll back up. */
+  let sharedRevealObserver = null;
+  function getRevealObserver() {
+    if (sharedRevealObserver) return sharedRevealObserver;
+    sharedRevealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-revealed');
+          sharedRevealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+    return sharedRevealObserver;
+  }
+
+  function observeReveal(els) {
+    if (prefersReducedMotion()) {
+      (els || []).forEach((el) => el && el.classList.add('is-revealed'));
+      return;
+    }
+    const observer = getRevealObserver();
+    (els || []).forEach((el) => el && observer.observe(el));
+  }
+
+  /** Section headings ("01. Skills", etc.) fade/slide in the first time
+      they scroll into view. These are static markup present at load,
+      so this only needs to run once. */
+  function initSectionRevealStatic() {
+    observeReveal($$('.section-title'));
+    observeReveal($$('.section-sub'));
+  }
+
+  /** Skill tags nudge slightly toward the cursor when it's nearby —
+      a lightweight "magnetic" hover effect. */
+  function initMagneticTags(container) {
+    if (prefersReducedMotion()) return;
+    $$('.skill-tag', container).forEach((tag) => {
+      tag.addEventListener('mousemove', (e) => {
+        const rect = tag.getBoundingClientRect();
+        const relX = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+        const relY = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+        tag.style.transform = `translate(${relX * 4}px, ${relY * 4 - 2}px)`;
+      });
+      tag.addEventListener('mouseleave', () => {
+        tag.style.transform = '';
+      });
+    });
+  }
+
+  /** Scatters a handful of glowing dots that drift upward through the
+      hero, each on its own randomized size/speed/color/drift so the
+      effect never looks mechanical or repeating in sync. */
+  function initHeroParticles() {
+    const wrap = $('#heroParticles');
+    if (!wrap || prefersReducedMotion()) return;
+
+    const colors = ['var(--c-scrape)', 'var(--c-analyze)', 'var(--c-automate)', 'var(--c-ml)', 'var(--c-ship)'];
+    const COUNT = 22;
+    const frag = document.createDocumentFragment();
+
+    for (let i = 0; i < COUNT; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'hero-particle';
+      const size = (Math.random() * 3 + 2).toFixed(1);
+      const dur = (Math.random() * 10 + 10).toFixed(1);
+      const delay = (Math.random() * 14).toFixed(1);
+      const drift = (Math.random() * 80 - 40).toFixed(0);
+      const left = (Math.random() * 100).toFixed(1);
+      dot.style.setProperty('--size', `${size}px`);
+      dot.style.setProperty('--dur', `${dur}s`);
+      dot.style.setProperty('--delay', `${delay}s`);
+      dot.style.setProperty('--drift', `${drift}px`);
+      dot.style.setProperty('--pcolor', colors[i % colors.length]);
+      dot.style.left = `${left}%`;
+      frag.appendChild(dot);
+    }
+    wrap.appendChild(frag);
+  }
+
+  /** Boot splash — a short "$ booting portfolio.exe" intro shown on
+      first load, tied to actual data loading (via the returned promise
+      the caller awaits) rather than a fixed fake delay, then torn down
+      completely so it can never intercept clicks later. */
+  function showBootSplash() {
+    const splash = $('#bootSplash');
+    const fill = $('#bootSplashFill');
+    if (!splash) return { finish: () => {} };
+
+    if (prefersReducedMotion()) {
+      splash.remove();
+      return { finish: () => {} };
+    }
+
+    document.body.style.overflow = 'hidden';
+    if (fill) requestAnimationFrame(() => { fill.style.width = '78%'; });
+
+    return {
+      finish() {
+        if (fill) fill.style.width = '100%';
+        setTimeout(() => {
+          splash.classList.add('is-hidden');
+          document.body.style.overflow = '';
+          setTimeout(() => splash.remove(), 550);
+        }, 220);
+      },
+    };
+  }
+
+  /** Thin progress bar (with a live percentage readout) fixed to the
+      top of the viewport, tracking scroll position through the page. */
+  function initScrollProgress() {
+    const bar = $('#scrollProgress');
+    const fill = $('#scrollProgressFill');
+    const pct = $('#scrollProgressPct');
+    if (!bar || !fill || !pct) return;
+
+    function update() {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const ratio = docHeight > 0 ? Math.min(1, Math.max(0, scrollTop / docHeight)) : 0;
+      fill.style.width = `${(ratio * 100).toFixed(1)}%`;
+      pct.textContent = `${String(Math.round(ratio * 100)).padStart(3, '0')}%`;
+      bar.classList.toggle('is-visible', scrollTop > 80);
+    }
+
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+  }
+
   /** True for a real image URL (Cloudinary etc.); false for the
       fallback data's plain-text captions like "Dashboard showing…". */
   const isImageUrl = (str = '') => /^https?:\/\//.test(str);
@@ -480,13 +617,16 @@ import {
     }
 
     container.innerHTML = projects.map(projectCardHTML).join('');
-    $$('.project-card', container).forEach((card) => {
+    $$('.project-card', container).forEach((card, i) => {
+      card.classList.add('reveal-up');
+      card.style.transitionDelay = `${Math.min(i, 8) * 0.06}s`;
       card.addEventListener('click', () => {
         const id = card.getAttribute('data-project-id');
         const project = PROJECTS.find((p) => p.id === id);
         if (project) openModal(project, card);
       });
     });
+    observeReveal($$('.project-card', container));
   }
 
   function applyFilterToGrids() {
@@ -858,6 +998,12 @@ import {
         <p class="commit-desc">${escapeHTML(c.desc)}</p>
       </div>
     `).join('');
+
+    $$('.commit', container).forEach((commit, i) => {
+      commit.style.transitionDelay = `${i * 0.12}s`;
+    });
+    observeReveal($$('.commit', container));
+    observeReveal([container]);
   }
 
   /* ------------------------------------------------------------------ */
@@ -885,6 +1031,12 @@ import {
         <p class="log-desc">${escapeHTML(entry.desc)}</p>
       </div>
     `).join('');
+
+    $$('.log-entry', container).forEach((entry, i) => {
+      entry.classList.add('reveal-up');
+      entry.style.transitionDelay = `${Math.min(i, 6) * 0.08}s`;
+    });
+    observeReveal($$('.log-entry', container));
   }
 
   /* ------------------------------------------------------------------ */
@@ -1059,6 +1211,12 @@ import {
     // via localStorage) always show at the top of page 1 so they don't
     // get buried behind pagination.
     container.innerHTML = state.reviewsPage === 1 ? pendingHTML + approvedHTML : approvedHTML;
+
+    $$('.review-card', container).forEach((card, i) => {
+      card.classList.add('reveal-up');
+      card.style.transitionDelay = `${Math.min(i, 8) * 0.08}s`;
+    });
+    observeReveal($$('.review-card', container));
 
     renderReviewsPagination(totalPages);
   }
@@ -1510,6 +1668,7 @@ import {
     }
 
     container.innerHTML = SKILLS.map(skillGroupHTML).join('');
+    initMagneticTags(container);
   }
 
   /* ------------------------------------------------------------------ */
@@ -1561,6 +1720,8 @@ import {
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
+    const boot = showBootSplash();
+
     initFooterYear();
     initThemeToggle();
     initMobileNav();
@@ -1570,6 +1731,9 @@ import {
     initContactForm();
     initReviewForm();
     initReviewModal();
+    initHeroParticles();
+    initScrollProgress();
+    initSectionRevealStatic();
 
     // Fetch all content (always live from Firestore) before rendering
     // anything that depends on it.
@@ -1588,6 +1752,8 @@ import {
     // Initial project render (featured grid only; full grid renders lazily
     // the first time "View all projects" is clicked).
     setFilter('all');
+
+    boot.finish();
   });
 
   /* ------------------------------------------------------------------ */
