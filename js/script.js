@@ -42,6 +42,7 @@ import {
   getProfile,
   getReviews,
   submitReview,
+  checkReviewStatuses,
 } from './firebase-data.js';
 
 (async () => {
@@ -918,13 +919,25 @@ import {
     }
   }
 
-  /** Drops any locally-tracked submissions that are now approved and
-      live in the real REVIEWS list, so the "pending" badge disappears
-      once the admin approves it and stops cluttering storage. */
-  function pruneApprovedFromMyReviews(approvedReviews) {
+  /** Drops any locally-tracked submissions that are no longer pending —
+      either approved (now live in the real REVIEWS list) or deleted by
+      the admin (checked directly against Firestore) — so a stale
+      "pending" badge doesn't linger forever after a reload. */
+  async function pruneApprovedFromMyReviews(approvedReviews) {
     const approvedIds = new Set((approvedReviews || []).map((r) => r.id));
     const list = getMyReviews();
-    const stillPending = list.filter((r) => !approvedIds.has(r.id));
+
+    const stillMaybePending = list.filter((r) => !approvedIds.has(r.id));
+    if (stillMaybePending.length === 0) {
+      if (stillMaybePending.length !== list.length) {
+        try { localStorage.setItem(MY_REVIEWS_KEY, JSON.stringify([])); } catch { /* ignore */ }
+      }
+      return [];
+    }
+
+    const statuses = await checkReviewStatuses(stillMaybePending.map((r) => r.id));
+    const stillPending = stillMaybePending.filter((r) => statuses[r.id] !== 'deleted');
+
     if (stillPending.length !== list.length) {
       try {
         localStorage.setItem(MY_REVIEWS_KEY, JSON.stringify(stillPending));
@@ -1015,11 +1028,11 @@ import {
     });
   }
 
-  function initReviewsGrid() {
+  async function initReviewsGrid() {
     const container = $('#reviewsGrid');
     if (!container) return;
 
-    const pendingMine = pruneApprovedFromMyReviews(REVIEWS);
+    const pendingMine = await pruneApprovedFromMyReviews(REVIEWS);
     const pendingHTML = pendingMine
       .map((r) => renderReviewCard(r, 0, true))
       .join('');

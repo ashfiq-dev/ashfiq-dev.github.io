@@ -348,6 +348,41 @@ export async function getReviews() {
 }
 
 /**
+ * Checks the current status of specific review ids directly in
+ * Firestore. Used to clean up a visitor's locally-tracked "my pending
+ * reviews" list: if a review was approved, getReviews() already
+ * covers it; if it was deleted by the admin, it won't exist at all
+ * anymore, which this catches so the stale "pending" badge doesn't
+ * linger forever in that visitor's browser.
+ *
+ * Returns a map of { [id]: 'approved' | 'pending' | 'deleted' }.
+ * Never throws — ids that can't be checked (offline, etc.) are simply
+ * left out of the result, so callers should treat missing keys as
+ * "unknown, leave as-is" rather than deleted.
+ */
+export async function checkReviewStatuses(ids) {
+  const result = {};
+  if (!ids || ids.length === 0) return result;
+
+  const ctx = await getFirestoreDb();
+  if (!ctx) return result;
+
+  const { db, firestoreModule } = ctx;
+  const { doc, getDoc } = firestoreModule;
+
+  await Promise.all(ids.map(async (id) => {
+    try {
+      const snap = await getDoc(doc(db, 'reviews', id));
+      result[id] = snap.exists() ? (snap.data().status || 'pending') : 'deleted';
+    } catch (err) {
+      // Leave this id out of the result on failure — caller keeps it as-is.
+    }
+  }));
+
+  return result;
+}
+
+/**
  * Public "leave a review" submission. Always lands as status:"pending"
  * — see firestore.rules, which enforces that server-side too so this
  * can't be bypassed from devtools. Never shows up on the site until
