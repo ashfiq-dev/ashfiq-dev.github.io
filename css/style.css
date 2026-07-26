@@ -1088,8 +1088,8 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
 .review-json-line{ white-space:pre-wrap; word-break:break-word; }
 .review-json-key{ color:var(--c-scrape); }
 .review-json-punct{ color:var(--text-dim); }
-.review-json-string{ color:var(--c-ship); }
-.review-json-string.is-text{ display:inline; }
+.review-json-string{ color:var(--c-analyze); }
+.review-json-string.is-text{ display:inline; color:var(--c-automate); }
 .review-json-name{ color:var(--text); font-weight:600; }
 
 .review-card-head-right{ display:flex; align-items:center; gap:10px; }
