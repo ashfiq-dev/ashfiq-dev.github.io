@@ -180,7 +180,11 @@ import {
     galleryIndex: 0,
     lightboxIndex: 0,
     lightboxAlt: '',
+    reviewsPage: 1,
+    lastFocusedBeforeReviewModal: null,
   };
+
+  const REVIEWS_PER_PAGE = 10;
 
   /* ------------------------------------------------------------------ */
   /* 4. THEME TOGGLE                                                     */
@@ -886,25 +890,238 @@ import {
   /* 11b. REVIEWS (public grid + "leave a review" submission form)       */
   /* ------------------------------------------------------------------ */
 
+  /* ------------------------------------------------------------------ */
+  /* 11a2. MY REVIEWS (localStorage — lets a visitor see their own       */
+  /*       pending submissions; nobody else can see this, since it      */
+  /*       never leaves their browser)                                   */
+  /* ------------------------------------------------------------------ */
+
+  const MY_REVIEWS_KEY = 'portfolio_my_reviews';
+
+  function getMyReviews() {
+    try {
+      const raw = localStorage.getItem(MY_REVIEWS_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveMyReview(entry) {
+    try {
+      const list = getMyReviews();
+      list.unshift(entry);
+      localStorage.setItem(MY_REVIEWS_KEY, JSON.stringify(list.slice(0, 20)));
+    } catch {
+      /* localStorage unavailable (private browsing etc.) — fail silently */
+    }
+  }
+
+  /** Drops any locally-tracked submissions that are now approved and
+      live in the real REVIEWS list, so the "pending" badge disappears
+      once the admin approves it and stops cluttering storage. */
+  function pruneApprovedFromMyReviews(approvedReviews) {
+    const approvedIds = new Set((approvedReviews || []).map((r) => r.id));
+    const list = getMyReviews();
+    const stillPending = list.filter((r) => !approvedIds.has(r.id));
+    if (stillPending.length !== list.length) {
+      try {
+        localStorage.setItem(MY_REVIEWS_KEY, JSON.stringify(stillPending));
+      } catch {
+        /* ignore */
+      }
+    }
+    return stillPending;
+  }
+
+
+  function renderReviewCard(r, indexInFullList, isPending) {
+    return `
+      <div class="review-card${isPending ? ' is-pending' : ''}">
+        <div class="review-card-head">
+          <span class="review-card-index">${isPending ? 'your submission' : indexInFullList + 1}</span>
+          <span class="review-card-head-right">
+            ${isPending ? '<span class="review-pending-badge">&#9203; pending approval</span>' : ''}
+            <span class="review-stars" aria-label="${r.rating} out of 5 stars">${'\u2605'.repeat(r.rating)}${'\u2606'.repeat(5 - r.rating)}</span>
+          </span>
+        </div>
+        <div class="review-card-body">
+          <div class="review-json-line"><span class="review-json-key">name</span><span class="review-json-punct">: </span><span class="review-json-name">${escapeHTML(r.name)}</span></div>
+          ${r.role ? `<div class="review-json-line"><span class="review-json-key">role</span><span class="review-json-punct">: </span><span class="review-json-string">${escapeHTML(r.role)}</span></div>` : ''}
+          <div class="review-json-line"><span class="review-json-key">review</span><span class="review-json-punct">: </span><span class="review-json-string is-text">"${escapeHTML(r.text)}"</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderReviewsPagination(totalPages) {
+    const pager = $('#reviewsPagination');
+    if (!pager) return;
+
+    if (totalPages <= 1) {
+      pager.hidden = true;
+      pager.innerHTML = '';
+      return;
+    }
+    pager.hidden = false;
+
+    const page = state.reviewsPage;
+    const buttons = [];
+
+    buttons.push(
+      `<button type="button" class="page-btn" id="reviewsPagePrev" ${page === 1 ? 'disabled' : ''} aria-label="Previous page">&lsaquo;</button>`
+    );
+
+    // Windowed page numbers: first, last, and a small range around the
+    // current page, with ellipses filling any gaps.
+    const pages = new Set([1, totalPages, page - 1, page, page + 1]);
+    let prevShown = 0;
+    for (let p = 1; p <= totalPages; p++) {
+      if (!pages.has(p) || p < 1 || p > totalPages) continue;
+      if (prevShown && p - prevShown > 1) {
+        buttons.push(`<span class="page-btn-ellipsis">&hellip;</span>`);
+      }
+      buttons.push(
+        `<button type="button" class="page-btn${p === page ? ' is-active' : ''}" data-page="${p}" aria-label="Page ${p}" aria-current="${p === page ? 'page' : 'false'}">${p}</button>`
+      );
+      prevShown = p;
+    }
+
+    buttons.push(
+      `<button type="button" class="page-btn" id="reviewsPageNext" ${page === totalPages ? 'disabled' : ''} aria-label="Next page">&rsaquo;</button>`
+    );
+
+    pager.innerHTML = buttons.join('');
+
+    $$('.page-btn[data-page]', pager).forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.reviewsPage = Number(btn.getAttribute('data-page'));
+        initReviewsGrid();
+        $('#reviewsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+    const prevBtn = $('#reviewsPagePrev');
+    const nextBtn = $('#reviewsPageNext');
+    if (prevBtn) prevBtn.addEventListener('click', () => {
+      state.reviewsPage = Math.max(1, state.reviewsPage - 1);
+      initReviewsGrid();
+      $('#reviewsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    if (nextBtn) nextBtn.addEventListener('click', () => {
+      state.reviewsPage = Math.min(totalPages, state.reviewsPage + 1);
+      initReviewsGrid();
+      $('#reviewsGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
   function initReviewsGrid() {
     const container = $('#reviewsGrid');
     if (!container) return;
 
+    const pendingMine = pruneApprovedFromMyReviews(REVIEWS);
+    const pendingHTML = pendingMine
+      .map((r) => renderReviewCard(r, 0, true))
+      .join('');
+
     if (!REVIEWS || REVIEWS.length === 0) {
-      container.innerHTML = `<p class="empty-state">No reviews yet \u2014 be the first to leave one below.</p>`;
+      container.innerHTML = pendingHTML
+        ? pendingHTML
+        : `<p class="empty-state">No reviews yet \u2014 be the first to leave one below.</p>`;
+      renderReviewsPagination(0);
       return;
     }
 
-    container.innerHTML = REVIEWS.map((r) => `
-      <div class="review-card">
-        <div class="review-stars" aria-label="${r.rating} out of 5 stars">${'\u2605'.repeat(r.rating)}${'\u2606'.repeat(5 - r.rating)}</div>
-        <p class="review-text">${escapeHTML(r.text)}</p>
-        <div class="review-author">
-          <span class="review-name">${escapeHTML(r.name)}</span>
-          ${r.role ? `<span class="review-role">${escapeHTML(r.role)}</span>` : ''}
-        </div>
-      </div>
-    `).join('');
+    const totalPages = Math.max(1, Math.ceil(REVIEWS.length / REVIEWS_PER_PAGE));
+    state.reviewsPage = Math.min(Math.max(1, state.reviewsPage), totalPages);
+
+    const start = (state.reviewsPage - 1) * REVIEWS_PER_PAGE;
+    const pageItems = REVIEWS.slice(start, start + REVIEWS_PER_PAGE);
+
+    const approvedHTML = pageItems
+      .map((r, i) => renderReviewCard(r, start + i))
+      .join('');
+
+    // Pending submissions (visible only to the visitor who wrote them,
+    // via localStorage) always show at the top of page 1 so they don't
+    // get buried behind pagination.
+    container.innerHTML = state.reviewsPage === 1 ? pendingHTML + approvedHTML : approvedHTML;
+
+    renderReviewsPagination(totalPages);
+  }
+
+  /* --- "write a review" modal ------------------------------------- */
+
+  function openReviewModal(triggerEl) {
+    const overlay = $('#reviewModalOverlay');
+    if (!overlay) return;
+
+    state.lastFocusedBeforeReviewModal = triggerEl || document.activeElement;
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+
+    const nameInput = $('#reviewName');
+    if (nameInput) nameInput.focus();
+    document.addEventListener('keydown', onReviewModalKeydown);
+  }
+
+  function closeReviewModal() {
+    const overlay = $('#reviewModalOverlay');
+    if (!overlay || overlay.hidden) return;
+
+    overlay.hidden = true;
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', onReviewModalKeydown);
+
+    if (state.lastFocusedBeforeReviewModal && typeof state.lastFocusedBeforeReviewModal.focus === 'function') {
+      state.lastFocusedBeforeReviewModal.focus();
+    }
+    state.lastFocusedBeforeReviewModal = null;
+  }
+
+  function onReviewModalKeydown(e) {
+    const modal = $('#reviewModal');
+    if (!modal) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeReviewModal();
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      const focusable = $$(
+        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+        modal
+      ).filter((el) => el.offsetParent !== null);
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  function initReviewModal() {
+    const overlay = $('#reviewModalOverlay');
+    const closeBtn = $('#reviewModalClose');
+    const trigger = $('#reviewWriteTrigger');
+    if (!overlay) return;
+
+    if (trigger) trigger.addEventListener('click', () => openReviewModal(trigger));
+    if (closeBtn) closeBtn.addEventListener('click', closeReviewModal);
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeReviewModal();
+    });
   }
 
   function initReviewForm() {
@@ -993,18 +1210,29 @@ import {
       }
       status.textContent = '// submitting review...';
 
-      const result = await submitReview({
+      const submittedData = {
         name: nameInput.value.trim(),
         role: $('#reviewRole').value.trim(),
         rating: Number(ratingInput.value) || 5,
         text: textInput.value.trim(),
-      });
+      };
+
+      const result = await submitReview(submittedData);
 
       if (result.ok) {
         status.textContent = '// Thanks! Your review is in \u2014 it\u2019ll appear here once it\u2019s been checked.';
+        if (result.id) {
+          saveMyReview({ id: result.id, ...submittedData });
+          state.reviewsPage = 1;
+          initReviewsGrid();
+        }
         form.reset();
         ratingInput.value = '5';
         paintStars(5);
+        setTimeout(() => {
+          closeReviewModal();
+          status.textContent = '';
+        }, 1800);
       } else {
         status.textContent = `// ${result.message}`;
       }
@@ -1328,6 +1556,7 @@ import {
     initLightbox();
     initContactForm();
     initReviewForm();
+    initReviewModal();
 
     // Fetch all content (always live from Firestore) before rendering
     // anything that depends on it.

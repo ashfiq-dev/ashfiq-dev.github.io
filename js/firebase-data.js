@@ -363,7 +363,7 @@ export async function submitReview({ name, role, rating, text }) {
     const { db, firestoreModule } = ctx;
     const { collection, addDoc, serverTimestamp } = firestoreModule;
 
-    await addDoc(collection(db, 'reviews'), {
+    const docRef = await addDoc(collection(db, 'reviews'), {
       name: (name || '').trim().slice(0, 80),
       role: (role || '').trim().slice(0, 100),
       rating: Math.min(5, Math.max(1, Math.round(Number(rating)) || 5)),
@@ -371,7 +371,7 @@ export async function submitReview({ name, role, rating, text }) {
       status: 'pending',
       createdAt: serverTimestamp(),
     });
-    return { ok: true };
+    return { ok: true, id: docRef.id };
   } catch (err) {
     console.warn('[firebase-data] Failed to submit review.', err);
     return { ok: false, message: 'Couldn\u2019t submit your review \u2014 please try again.' };

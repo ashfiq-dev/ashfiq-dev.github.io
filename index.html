@@ -328,12 +328,33 @@
         <!-- populated by JS -->
       </div>
 
-      <div class="contact-card review-form-card">
+      <div class="reviews-pagination" id="reviewsPagination">
+        <!-- populated by JS -->
+      </div>
+
+      <button type="button" class="review-write-card" id="reviewWriteTrigger">
+        <span class="review-write-icon">+</span>
+        <span class="review-write-text">
+          <span class="review-write-title">write_review()</span>
+          <span class="review-write-sub">// share your experience working together</span>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============================================
+       REVIEW MODAL — POST /reviews
+  ============================================ -->
+  <div class="modal-overlay" id="reviewModalOverlay" hidden>
+    <div class="modal review-modal" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle" id="reviewModal">
+      <button class="modal-close" id="reviewModalClose" type="button" aria-label="Close dialog">&times;</button>
+
+      <div class="modal-body">
         <div class="terminal-titlebar">
           <span class="terminal-dot dot-red"></span>
           <span class="terminal-dot dot-yellow"></span>
           <span class="terminal-dot dot-green"></span>
-          <span class="terminal-titletext">POST /reviews</span>
+          <span class="terminal-titletext" id="reviewModalTitle">POST /reviews</span>
         </div>
 
         <form class="contact-form" id="reviewForm" novalidate>
@@ -375,7 +396,7 @@
         </form>
       </div>
     </div>
-  </section>
+  </div>
 
   <!-- ============================================
        CONTACT — POST /contact
