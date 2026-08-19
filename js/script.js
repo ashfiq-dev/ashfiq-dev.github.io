@@ -205,9 +205,31 @@ import {
     window.addEventListener('resize', update);
   }
 
-  /** True for a real image URL (Cloudinary etc.); false for the
-      fallback data's plain-text captions like "Dashboard showing…". */
-  const isImageUrl = (str = '') => /^https?:\/\//.test(str);
+  /** True for any http(s) URL (image or video). */
+  const isUrl = (str = '') => /^https?:\/\//.test(str);
+
+  const isDirectVideoUrl = (str = '') => /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(str);
+  const isYouTubeUrl = (str = '') => /(?:youtube\.com|youtu\.be)/i.test(str);
+  const isVimeoUrl = (str = '') => /vimeo\.com/i.test(str);
+
+  /** True for a video URL (direct file, YouTube, or Vimeo link). */
+  const isVideoUrl = (str = '') => isUrl(str) && (isDirectVideoUrl(str) || isYouTubeUrl(str) || isVimeoUrl(str));
+
+  /** True for a real image URL (Cloudinary etc.); false for video URLs
+      and for the fallback data's plain-text captions like
+      "Dashboard showing…". */
+  const isImageUrl = (str = '') => isUrl(str) && !isVideoUrl(str);
+
+  /** Converts a YouTube/Vimeo watch-page URL into its embeddable
+      iframe-src form. Returns the original URL for anything else
+      (i.e. it's already a direct video file and doesn't need one). */
+  function toEmbedUrl(str = '') {
+    const ytMatch = str.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]+)/i);
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+    const vimeoMatch = str.match(/vimeo\.com\/(\d+)/i);
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    return str;
+  }
 
   /* -- Project "full description" rendering ---------------------------
      The admin panel's rich-text editor saves this field as a small
@@ -825,18 +847,29 @@ import {
 
     // Gallery — one slide visible at a time, navigated via prev/next
     // buttons + dots instead of a horizontal scrollbar.
-    const galleryItems = project.gallery && project.gallery.length ? project.gallery : [project.title];
+    // The video (if any) always goes last so it never becomes gallery[0] —
+    // that slot is also used elsewhere as the project card's thumbnail,
+    // which only knows how to render images.
+    const galleryItems = project.gallery && project.gallery.length ? [...project.gallery] : [project.title];
+    if (project.video) galleryItems.push(project.video);
     state.galleryItems = galleryItems;
     state.galleryIndex = 0;
     state.lightboxAlt = `${project.title} screenshot`;
 
     gallery.style.transform = 'translateX(0)';
     gallery.innerHTML = galleryItems
-      .map((item, i) =>
-        isImageUrl(item)
+      .map((item, i) => {
+        if (isVideoUrl(item)) {
+          const embed = toEmbedUrl(item);
+          const inner = isDirectVideoUrl(item)
+            ? `<video src="${escapeHTML(item)}" controls playsinline preload="metadata"></video>`
+            : `<iframe src="${escapeHTML(embed)}" title="${escapeHTML(project.title)} video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+          return `<div class="modal-gallery-img has-video" data-index="${i}">${inner}</div>`;
+        }
+        return isImageUrl(item)
           ? `<div class="modal-gallery-img has-image" data-index="${i}"><img src="${escapeHTML(item)}" alt="${escapeHTML(project.title)} screenshot" loading="lazy"></div>`
-          : `<div class="modal-gallery-img" data-index="${i}">${escapeHTML(item)}</div>`
-      )
+          : `<div class="modal-gallery-img" data-index="${i}">${escapeHTML(item)}</div>`;
+      })
       .join('');
 
     // Clicking an image opens it fullscreen (lightbox index only counts
@@ -852,7 +885,7 @@ import {
 
     if (dotsWrap) {
       dotsWrap.innerHTML = galleryItems.length > 1
-        ? galleryItems.map((_, i) => `<button type="button" class="gallery-dot${i === 0 ? ' is-active' : ''}" data-index="${i}" aria-label="Go to image ${i + 1}"></button>`).join('')
+        ? galleryItems.map((_, i) => `<button type="button" class="gallery-dot${i === 0 ? ' is-active' : ''}" data-index="${i}" aria-label="Go to slide ${i + 1}"></button>`).join('')
         : '';
       $$('.gallery-dot', dotsWrap).forEach((dot) => {
         dot.addEventListener('click', () => goToGallerySlide(Number(dot.getAttribute('data-index'))));

@@ -17,6 +17,9 @@ import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET, isCloudinaryConfigured
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB — keep in sync with the preset's own limit
 
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB — keep in sync with the preset's own limit
+
 /**
  * Uploads a single File to Cloudinary.
  * Returns { ok: true, url } on success, or { ok: false, message } on
@@ -90,6 +93,48 @@ export async function uploadMultipleImages(files) {
 }
 
 /**
+ * Uploads a single video File to Cloudinary (resource_type: video).
+ * Returns { ok: true, url } on success, or { ok: false, message } on
+ * failure — never throws.
+ */
+export async function uploadSingleVideo(file) {
+  if (!isCloudinaryConfigured()) {
+    return { ok: false, message: 'Video uploads aren\u2019t set up yet. Check admin/js/cloudinary-config.js.' };
+  }
+
+  const validation = validateVideoFile(file);
+  if (!validation.ok) return validation;
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`,
+      { method: 'POST', body: formData }
+    );
+
+    if (!response.ok) {
+      console.warn('[admin-cloudinary] Video upload failed with status', response.status);
+      // Most common cause: the upload preset's "Allowed formats" list
+      // doesn't include video formats yet — see cloudinary-config.js.
+      return { ok: false, message: 'Upload failed \u2014 make sure your Cloudinary preset allows video formats (see cloudinary-config.js), then try again.' };
+    }
+
+    const result = await response.json();
+    if (!result.secure_url) {
+      return { ok: false, message: 'Upload failed \u2014 try again.' };
+    }
+
+    return { ok: true, url: result.secure_url };
+  } catch (err) {
+    console.warn('[admin-cloudinary] Video upload error.', err);
+    return { ok: false, message: 'Upload failed \u2014 check your connection and try again.' };
+  }
+}
+
+/**
  * Client-side pre-check so obviously invalid files never even hit the
  * network — mirrors the restrictions configured on the Cloudinary preset
  * (see js/cloudinary-config.js) but this is a convenience check only;
@@ -104,6 +149,19 @@ function validateFile(file) {
   }
   if (file.size > MAX_FILE_BYTES) {
     return { ok: false, message: 'That image is too large \u2014 5 MB max.' };
+  }
+  return { ok: true };
+}
+
+function validateVideoFile(file) {
+  if (!file) {
+    return { ok: false, message: 'No file selected.' };
+  }
+  if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+    return { ok: false, message: 'Only MP4, WEBM, or MOV videos are allowed.' };
+  }
+  if (file.size > MAX_VIDEO_BYTES) {
+    return { ok: false, message: 'That video is too large \u2014 50 MB max.' };
   }
   return { ok: true };
 }

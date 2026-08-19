@@ -225,6 +225,7 @@ function normalizeProject(doc) {
     download: doc.downloadUrl || '',
     featured: Boolean(doc.featured),
     gallery: Array.isArray(doc.images) ? doc.images : [],
+    video: doc.videoUrl || '',
   };
 }
 

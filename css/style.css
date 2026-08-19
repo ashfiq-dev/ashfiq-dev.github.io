@@ -949,6 +949,20 @@ h1,h2,h3,h4{ font-family:var(--font-head); font-weight:600; line-height:1.2; }
   display:block;
 }
 
+.modal-gallery-img.has-video{
+  font-size:0;
+  color:transparent;
+  cursor:default;
+}
+.modal-gallery-img.has-video video,
+.modal-gallery-img.has-video iframe{
+  width:100%;
+  height:100%;
+  display:block;
+  border:0;
+  background:#000;
+}
+
 .gallery-nav{
   position:absolute;
   top:50%;

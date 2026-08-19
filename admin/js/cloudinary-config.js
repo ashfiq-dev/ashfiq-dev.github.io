@@ -3,7 +3,8 @@
    ==========================================================================
 
    This file holds the connection settings the ADMIN PANEL (/admin) uses to
-   upload images directly from the browser to Cloudinary, using an
+   upload images and project videos directly from the browser to
+   Cloudinary, using an
    UNSIGNED upload preset. There is no API secret anywhere in this file
    or anywhere else in this repo — that is intentional. Unsigned uploads
    are designed to be safe to trigger from public, client-side code as
@@ -30,10 +31,13 @@
    5. Still on the preset's settings page, click into "Upload Manipulations
       and Restrictions" (or the "Upload Control" section, naming varies
       slightly by Cloudinary UI version) and set:
-        - Allowed formats:   jpg, png, webp
-        - Max file size:     5000000  (5 MB — adjust if you want, but
-                              keep a limit so nobody can flood your
-                              account with huge files)
+        - Allowed formats:   jpg, png, webp, mp4, webm, mov  (images for
+                              gallery photos, video formats for the
+                              project video upload)
+        - Max file size:     50000000  (50 MB \u2014 covers the video upload;
+                              adjust if you want, but keep a limit so
+                              nobody can flood your account with huge
+                              files)
         - Max image width:   2000  (optional, but recommended — Cloudinary
                               will downscale anything larger on upload)
    6. Save the preset.

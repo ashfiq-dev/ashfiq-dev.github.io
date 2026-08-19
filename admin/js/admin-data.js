@@ -25,8 +25,8 @@ import { firebaseConfig, isFirebaseConfigured } from '../../js/firebase-config.j
 
   projects (collection "projects")
     - title, shortDescription, fullDescription, tags: array<string>,
-      techStack: array<string>, images: array<string>, githubUrl,
-      liveUrl, featured: boolean, order: number
+      techStack: array<string>, images: array<string>, videoUrl: string,
+      githubUrl, liveUrl, featured: boolean, order: number
 
   skills (collection "skills")
     - group, stage, color, tags: array<string>, order: number

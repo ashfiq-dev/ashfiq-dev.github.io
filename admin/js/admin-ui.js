@@ -17,7 +17,7 @@
    ========================================================================== */
 
 import { isAuthAvailable, signIn, signOutUser, onAuthChange } from './admin-auth.js';
-import { uploadSingleImage, uploadMultipleImages } from './admin-cloudinary.js';
+import { uploadSingleImage, uploadMultipleImages, uploadSingleVideo } from './admin-cloudinary.js';
 import {
   getProfileDoc, saveProfileDoc,
   listProjects, createProject, updateProject, deleteProject,
@@ -729,6 +729,43 @@ async function renderProjectsTab(content) {
       galleryFileInput.value = '';
     });
 
+    let currentVideoUrl = item.videoUrl || '';
+    const videoFileInput = el('input', { type: 'file', accept: 'video/mp4,video/webm,video/quicktime' });
+    const videoStatus = el('span', { class: 'field-hint' }, '');
+    const videoPreviewWrap = el('div', { class: 'image-grid' });
+
+    function renderVideoPreview() {
+      videoPreviewWrap.innerHTML = '';
+      if (!currentVideoUrl) return;
+      videoPreviewWrap.appendChild(
+        el('div', { class: 'image-thumb' }, [
+          el('video', { src: currentVideoUrl, muted: 'muted', playsinline: 'playsinline' }),
+          el('button', {
+            type: 'button',
+            class: 'remove-thumb',
+            onclick: () => { currentVideoUrl = ''; renderVideoPreview(); },
+          }, '\u00d7'),
+        ])
+      );
+    }
+    renderVideoPreview();
+
+    videoFileInput.addEventListener('change', async () => {
+      const file = videoFileInput.files[0];
+      videoFileInput.value = '';
+      if (!file) return;
+      videoStatus.textContent = 'Uploading\u2026';
+      const uploadResult = await uploadSingleVideo(file);
+      if (!uploadResult.ok) {
+        videoStatus.textContent = uploadResult.message;
+        showToast(uploadResult.message, true);
+        return;
+      }
+      currentVideoUrl = uploadResult.url;
+      renderVideoPreview();
+      videoStatus.textContent = 'Uploaded \u2014 remember to click Save.';
+    });
+
     const errorLine = el('p', { class: 'form-error' }, '');
     const saveBtn = el('button', { type: 'submit', class: 'btn btn-primary' }, isEdit ? 'Save changes' : 'Add project');
 
@@ -750,6 +787,7 @@ async function renderProjectsTab(content) {
           tags: tagPills.filter((p) => p._checkbox.checked).map((p) => p._checkbox.value),
           techStack: techInput.value.split(',').map((t) => t.trim()).filter(Boolean),
           images: galleryUrls,
+          videoUrl: currentVideoUrl,
           githubUrl: githubInput.value.trim(),
           liveUrl: liveInput.value.trim(),
           featured: featuredInput.checked,
@@ -800,6 +838,16 @@ async function renderProjectsTab(content) {
           ]),
           galleryStatus,
           imageGrid,
+        ]),
+        el('div', { class: 'field' }, [
+          el('label', {}, 'Project video (optional)'),
+          el('label', { class: 'upload-zone', onclick: () => videoFileInput.click() }, [
+            'Click to choose an MP4, WEBM, or MOV video (max 50 MB)',
+            videoFileInput,
+          ]),
+          videoStatus,
+          videoPreviewWrap,
+          el('p', { class: 'field-hint' }, 'Shown as an extra slide after the gallery images.'),
         ]),
       ]),
       saveBtn,
